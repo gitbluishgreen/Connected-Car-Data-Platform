@@ -143,28 +143,27 @@ bool ExpressionNode::evaluate_bool_expr(const Schema& s)
             return false;
 	}
 }
-
 SelectQuery::SelectQuery()
 {
-	distinct_query = false;
+    distinct_query = false;
+    limit_term = -1;
 }
 
 Table::Table(
-        int numRows, 
-        Schema* initTable,
-        int* anomaly_states
+        int numRows,int numberOfCars,int max_wl_size
     ):
-        numberOfRows(numRows)
+        numberOfRows(numRows), max_worklist_size(max_wl_size)
     {
-        cudaMalloc(&StateDatabase, numberOfRows*sizeof(Schema));
-        num_states = 10;
-        anomaly_states = (int*)calloc(num_states * numberOfRows,sizeof(int));
+        cudaMalloc(&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
+        num_states = 10
+        write_index = 0;
+        anomaly_states = (int*)calloc(num_states * numberOfCars,sizeof(int));
         cudaMemcpy(StateDatabase, initTable, numberOfRows*sizeof(Schema), cudaMemcpyHostToDevice);        
     }
 
 void Table::init_bt(int num_threads)
 {
-    nb = ceil(1.0*num_threads)/1024;
+    nb = ceil((1.0*num_threads)/1024);
     nt = 1024;
 }
 void Table::state_update(Schema& s)
@@ -267,63 +266,69 @@ void Table::state_update(Schema& s)
 void Table::update_worklist(Schema& s)
 {
     state_update(s);
-    work_list[s.database_index] = s;//update the schema object being stored.
+    int x = write_index;
+    write_index = (write_index + 1)%numberOfRows;
+    work_list[x] = s;//update the schema object being stored.
+    if(work_list.size() == max_worklist_size)
+    {
+        WriteRows();
+        work_list.clear();
+    }
 }
 
-std::vector<Schema> Table::get_pending_writes()
-{
-    std::vector<Schema> v;
-    for(auto it: work_list)
-        v.push_back(it.second);
-    return v;
-}
-
-void Table::WriteRows(vector<Schema> RowsToBeWritten){
+void Table::WriteRows(){
         // Find the row numbers to be modified in the database
         // This is done parallely, using the fact that the primary key of each row
         // in the argument rowsToBeModified uniquely defines a row in the actual database.
     Schema* devicerowsToBeModified;
-    cudaMemcpy(deviceRowsToBeModified, hostRowsToBeModified, RowsToBeWritten.size()*sizeof(Schema), cudaMemcpyHostToDevice);
-    init_bt(RowsToBeWritten.size());//linear number of threads are enough.
+    int* indices_to_overwrite;
+    cudaMalloc(&devicerowsToBeModified,work_list.size()*sizeof(Schema));
+    cudaMalloc(&indices_to_overwrite,work_list.size()*sizof(int));
+    int i = 0;
+    for(std::pair<int,Schema> obj: work_list)
+    {
+        cudaMemcpy(devicerowsToBeModified + i,obj.second,cudaMemcpyHostToDevice);
+        cudaMemcpy(indices_to_overwrite + i,obj.first,cudaMemcpyHostToDevice);
+        i++;
+    }
+    init_bt(work_list.size());//linear number of threads are enough.
         // The next task, using the row numbers acquired with the above kernel, 
         // fire numberOfAttributes*numRowsToBeModified threads to modify the cells 
         // of the actual database
     changeRowsKernel<<<nb, nt>>>(
-        numberOfRowsToBeModified,
+        work_list.size(),
+        indices_to_overwrite,
         deviceRowsToBeModified, 
         StateDatabase 
-    );
+    );//this kernel has to overwrite the existing allocated memory.
     cudaDeviceSynchronize();
         //std::cout << "Write Completed!!" << endl;
 }
 
-std::map<int,Schema> Table::Select(vector<std::string> columns,std::string conditionAttribute,int conditionValue)
+std::set<Schema> Table::Select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
 {
+    //acquire a lock before writing? Mostly needed, can be a lock using mutex across both threads. 
     int* selectedValues;
     int* endIndexSelectedValues;
-    int* retArr;
-    int temp = 0;
+    Schema* retArr;
     int size;
-    int selectionCol = attributesToCol[selectionAttribute];
-    int conditionCol = attributesToCol[conditionAttribute];
     cudaMalloc(&selectedValues, numberOfRows*sizeof(int));//row indices that were selected 
-    cudaMalloc(&endIndexSelectedValues, sizeof(int));        
-    cudaMemcpy(selectedValues, &temp, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMalloc(&endIndexSelectedValues, sizeof(int));
+    cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.        
     init_bt(numberOfRows);
     selectKernel<<<nb, nt>>>(
             StateDatabase,
             numberOfRows,
-            numberOfAttributes,
             selectedValues,
-            selectionCol,
-            conditionCol,
-            conditionValue,
-            endIndexSelectedValues
+            endIndexSelectedValues,
+            select_query
         );
+    cudaDeviceSynchronize();
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
-    retArr = new int[size];
-    cudaMemcpy(retArr, selectedValues, size*sizeof(int), cudaMemcpyDeviceToHost);
-    std::set<int> ret(retArr, retArr+size);
+    retArr = new Schema[size];
+    cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
+    std::set<Schema> ret(retArr, retArr+size);
+    delete retArr;
     return ret;
 }
 
@@ -363,7 +368,7 @@ std::pair<int*,int*> GPSsystem::djikstra_result(int source,std::set<int>& setDro
         init_bt(numberOfVertices*numberOfDroppedVertices);
         DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
             cudaDeviceSynchronize();
-        }
+    }
         // Phase two, Implement Dijkstra:
         int  hostNumberOfUsedVertices = 0;
         int* minDistance;
@@ -421,9 +426,9 @@ std::pair<int*,int*> GPSsystem::djikstra_result(int source,std::set<int>& setDro
             cudaDeviceSynchronize();
             hostNumberOfUsedVertices++;
         }
-    return make_pair(hostParent,hostDistance);
     cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(hostDistance, deviceDistance, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+    return make_pair(hostParent,hostDistance);
 }
 GPSsystem::GPSsystem(int numVert, int* initMat){
     numberOfVertices = numVert;
@@ -432,7 +437,7 @@ GPSsystem::GPSsystem(int numVert, int* initMat){
         hostAdjacencyMatrix[i] = initMat[i];
     }
 }
-void Table::convoyNodeFinder(std::vector<bool> included_vertices)
+void GPSsystem::convoyNodeFinder(std::map<int,int>& car_ids)
 {
     //djikstras kernel call,and then cumulatively add those distances. Then check the city with least sum of 
     //distance and ask cars to converge there.
@@ -441,50 +446,107 @@ void Table::convoyNodeFinder(std::vector<bool> included_vertices)
     init_bt(numberOfVertices);
     set_zero<<<nb,nt>>>(sum_array);
     cudaDeviceSynchronize();
+    std::set<int> included_vertices;
+    for(std::pair<int,int> p: car_ids)
+    {
+        included_vertices.insert(p.second);
+    }
     std::set<int> droppedVertices;
     for(int i = 0;i < numberOfVertices;i++)
     {
-        if(!included_vertices[i])
+        if(included_vertices.find(i) == included_vertices.end())
         {
             double y = rand()/RAND_MAX;
-            if(y <= 0.5)
+            if(y <= 0.5)//randomly dropped, can be adjusted. 
                 droppedVertices.insert(i);
         }
     }
     std::vector<int*> parent_array;
     std::pair<int*,int*> p;
     init_bt(numberOfVertices);
-    for(i = 0;i < numberOfVertices; i++)
+    for(int i: included_vertices)
     {
-        if(included_vertices[i])
-        {
-            p = djikstra_result(i,droppedVertices);
-            parent_array.push_back(p.first);
-            addMatrix<<<nb,nt>>>(sum_array,p.second);
-            cudaDeviceSynchronize();
-        }
+        p = djikstra_result(i,droppedVertices);
+        parent_array.push_back(p.first);
+        addMatrix<<<nb,nt>>>(sum_array,p.second);
+        cudaDeviceSynchronize();
     }
     int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
     //now write to shared memory and send a signal to each car.
-    for(int i = 0;i < numberOfVertices;i++)
+    for(std::pair<int,int> car_ids)//gives their respective current positions.
     {
-        if(included[i])
+        std::vector<int> path;
+        int curr = min_index;
+        while(curr != -1)
         {
-            std::vector<int> path;
-            //update the path here
+            path.push_back(curr);
+            curr = parent_array[p.second][curr];
         }
+        reverse(path.begin(),path.end());
+        char c[20];
+        sprintf(c,"shm_1_%d",p.first);
+        int fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,sizeof(int));
+        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = 2;
+        c[4] = 2;
+        fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,sizeof(int));
+        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = path.size();
+        c[4] = 3;
+        fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,path.size()*sizeof(int));
+        int* ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        for(int i = 0;i < path.size();i++)
+            ptr[i] = path[i];
+        kill(p.first,SIGUSR1);
+        //update the path here by writing to shared memory. 
     }
 }
 
- std::vector<int> Table::PathFinder(int source, int destination,set<int> setDroppedVertices){
+std::vector<int> GPSSystem::PathFinder(int source, int destination,std::set<int>& setDroppedVertices){
     std::pair<int*,int*> value = djikstra_result(source, setDroppedVertices);
     int hostParent[numberOfVertices];
-    int hostDistance[numberOfVertices*numberOfVertices];
+    int hostDistance[numberOfVertices];
     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
     cudaMemcpy(hostDistance,value.second,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
-    if(hostDistance[destination] == INT_MAX) return std::vector<int>();
     std::vector<int> path;
+    if(hostDistance[destination] == INT_MAX) return path;
     int currentVertex = destination;
+    while(currentVertex != source){
+        path.push_back(currentVertex);
+        currentVertex = hostParent[currentVertex];
+    }
+    path.push_back(source);
+    reverse(path.begin(), path.end());
+    return path;
+}
+std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set<int>& setDroppedVertices){
+    std::pair<int*,int*> value = djikstra_result(source, setDroppedVertices);
+    int hostParent[numberOfVertices];
+    int hostDistance[numberOfVertices];
+    cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+    cudaMemcpy(hostDistance,value.second,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+    int fd = shm_open("vertex_type",O_RDONLY,0666);
+    int* arr = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
+    int min_dist = INT_MAX;
+    int path_v = -1;
+    for(int i = 0;i < numberOfVertices;i++)
+    {
+        if(arr[i] == target_type)
+        {
+            if(hostDistance[i] < min_dist)
+            {
+                min_dist = hostDistance[i];
+                path_v = i;
+            }
+        }
+    }
+    std::vector<int> path;
+    if(min_dist == INT_MAX)
+        return path;
+    int currentVertex = path_v;
     while(currentVertex != source){
         path.push_back(currentVertex);
         currentVertex = hostParent[currentVertex];

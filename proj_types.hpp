@@ -3,13 +3,15 @@
 #define PROJ_TYPES
 #include <string>
 #include <vector>
-#include "kernel.h"
-#include <cuda.h>
+#include <map>
+#include <mutex>
+#include <thread>
+//#include <cuda.h>
 class Schema
 {
 public:
     int vehicle_id;//the process ID of the car serves as the vehicle ID.
-    int database_index;//fixed constant for mapping to the database purposes.
+    int database_index;//fixed constant for mapping to the database purposes for anomaly detection.
     double oil_life_pct;//oil percentage
     double tire_p_rl;//tire pressures on each tire.
     double tire_p_rr;
@@ -29,9 +31,6 @@ public:
     int origin_vertex;
     int destination_vertex;
 };
-//SELECT x,y,z from T where gear_toggle && speed < 20
-//A rows: launch A GPU threads 
-//obj -> obj.evaluate_bool_expr(row_object)
 class ExpressionNode
 {
     public:
@@ -47,6 +46,7 @@ class ExpressionNode
         double evaluate_double_expr(const Schema&);
 		bool evaluate_bool_expr(const Schema&);
 };
+
 class SelectQuery
 {
 	public:
@@ -56,47 +56,59 @@ class SelectQuery
 		std::vector<std::pair<ExpressionNode*,bool>> order_term;
 		ExpressionNode* select_expression;
         ExpressionNode* group_term;
-		int limit_val;
+		int limit_term;
 		SelectQuery();
 };
-class Table{
+
+struct pass_to_bison
+{
+    SelectQuery* select_query;
+    std::map<std::string,int> column_map;
+    void* scanner;
+};
+
+//SELECT x,y,z from T where gear_toggle && speed < 20
+//A rows: launch A GPU threads 
+//obj -> obj.evaluate_bool_expr(row_object)
+
+/class Table{
 private:
     int nb,nt;
     Schema* StateDatabase;//The table is represented by an object array. Primary keys are as intended.
     int* anomaly_states;//This table is to track state transitions for anomaly detection.
     int num_states;//number of various anomaly states needed. 
-    map<int,Schema> work_list;//stores a worklist of various queries to lazily update. State updates happen here.
+    std::map<int,Schema> work_list;//stores a worklist of various queries to lazily update. State updates happen here.
     const int numberOfRows;
+    int write_index;//which row has to be overwritten?
+    int max_worklist_size;
+    void WriteRows();
 public:
     void init_bt(int);
-        Table(
-        int, 
-        Schema*,
-        int*);
+    Table(int,int,int);
     void state_update(Schema&);
     void update_worklist(Schema&);
-    std::vector<Schema> get_pending_writes();
-    void WriteRows(std::vector<Schema>);
-    std::map<int,Schema> Select(std::vector<std::string>,std::string,int);
+    std::set<Schema> Select(std::vector<std::string>,std::string,int);
     void PrintDatabase();
 };
-class GPSsystem{
+class GPSSystem{
 private:
     int numberOfVertices;
     int* hostAdjacencyMatrix;    
     std::pair<int*,int*> djikstra_result(int,std::set<int>&);
 public:
-    GPSsystem(int,int*);
-    void convoyNodeFinder(std::vector<bool>);
-    std::vector<int> PathFinder(int,int,std::set<int>);
+    GPSSystem(int,int*);
+    std::pair<int*,int*> djikstra_result(int,std::set<int>&);
+    std::vector<int> PathFinder(int,int,set<int>&);
+    void convoyNodeFinder(std::map<int,int>&);
+    std::vector<int> findGarageorBunk(int,int,std::set<int>&);
 };
 class Limits
 {
-    /*
-    Sometimes, certain status messages may contain incorrect update information. Anomaly detetion seeks to check if 
-    this is actually the case by seeing if a contiguous number of such messages are actually received. One such
-    inconsistent message is an anomaly caused by transmission errors rather than an actual update. 
-    */
+    
+    //Sometimes, certain status messages may contain incorrect update information. Anomaly detetion seeks to check if 
+    //this is actually the case by seeing if a contiguous number of such messages are actually received. One such
+    //inconsistent message is an anomaly caused by transmission errors rather than an actual update. 
+  
     public: 
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank.
         double interval_between_messages = 0.1;//10 messages per second.
@@ -114,6 +126,7 @@ class Limits
         double engine_temperature_max = 104.44;//typical engine temperatures are in the range 195-220 degrees Fahrenheit.
         double engine_temperature_min = 90.56;
         double min_oil_level = 0.4;//minimum admissible oil percentage
-        double min_fuel_percentage = 0.2;//minimum fuel percentage allowable 
+        double min_fuel_percentage = 0.1;//minimum fuel percentage allowable 
+        double brake_recovery_time = 2;//2 seconds to reaccelerate.
 };
 #endif

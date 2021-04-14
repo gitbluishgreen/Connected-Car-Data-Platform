@@ -2,53 +2,56 @@
 	#include <iostream>
 	#include <string>
 	#include <stdlib.h>
+	#include <utility>
 	#include <vector>
 	#include <map>
-	#include <utility>
-	#include <cmath>
-	#include "proj_types.h"
-	void yyerror(SelectQuery* select_query,std::map<std::string,int> column_map,const char* error_msg);
-	//int yyparse(SelectQuery* select_query,std::map<std::string,int> column_map);
+	#include "proj_types.hpp"
+	void yyerror(const char*);
+	int yyparse(void);
 	int yylex(void);
-	//int yylex_destroy(void);
-	//int yy_scan_string(const char*);
-	std::map<std::string,int> column_map;  
+	int yy_scan_string(const char*);
+	int yylex_destroy(void);
+	void update_query(SelectQuery*);
+	int get_type(std::string);
+	void update_columns(std::vector<std::string>*);
+	bool find_column(std::string);
+	std::map<std::string,int> column_map; 
+	SelectQuery* select_query;
 %}
 %union
 {
     double value;
     std::string* identifier;
-	SelectQuery* SelectObject;
+	class SelectQuery* SelectObject;
 	bool distinct;
-	ExpressionNode* expression;
+	class ExpressionNode* expression;
 	std::vector<std::string>* name_list;
 	std::vector<std::pair<std::string,ExpressionNode*>>* expression_list;
 	std::vector<std::pair<ExpressionNode*,bool>>* order_list;
 }
-%parse-param {SelectQuery* select_query}{std::map<std::string,int> column_map}
 %start goal;
-%type <SelectObject> goal Select_Query
-%type <value> LimitExp Value
+%type <SelectObject> Select_Query goal
+%type <value> LimitExp 
 %type <distinct> DistinctQualifier
 %type <expression_list> MultiAggCol AggCol
 %type <name_list> SelectCol MultiCol
 %type <order_list> OrderExp ExpList
-%type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp
-%type <identifier> Column AggregateFunction Identifier OrderCriteria
+%type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp 
+%type <identifier> Column AggregateFunction OrderCriteria
 %token Plus Minus Mult Div Modulo NotEqual Equal Greater GreaterEqual Lesser LesserEqual Or And Not Where Order Group By Limit Distinct Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
 %%
 goal: Select_Query
 {
 	$$ = $1;
-	select_query = $$;
-	//std::cout<<"Reached Goal\n";
+	//update_query($$);
 };
 Select_Query: SelectCol DistinctQualifier WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery();
+	$$ = new SelectQuery;
+	$$->distinct_query = false;
 	for(auto it: *$1)
 	{
-		if(column_map.find(it) == column_map.end())
+		if(!find_column(it))
 			YYABORT;
 	}
 	$$->select_columns = *$1;
@@ -61,7 +64,8 @@ Select_Query: SelectCol DistinctQualifier WhereCondition GroupExp OrderExp Limit
 }
 | AggCol DistinctQualifier WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery();
+	$$ = new SelectQuery;
+	$$->distinct_query = false;
 	$$->aggregate_columns = *$1;
 	$$->distinct_query = $2;
 	$$->select_expression = $3;
@@ -70,17 +74,18 @@ Select_Query: SelectCol DistinctQualifier WhereCondition GroupExp OrderExp Limit
 	$$->limit_term = $6;
 	//std::cout<<"Reached Select_Query\n";
 };
-DistinctQualifier: Distinct
-{
-	$$ = true;
-}
-| %empty
+DistinctQualifier: 
+Mult
 {
 	$$ = false;
+}
+| Distinct
+{
+	$$ = true;
 };
 Column: Identifier
 {
-	$$ = $1;	
+	$$ = *(yylval.identifier);	
 };
 OrderCriteria: Ascending
 {
@@ -92,24 +97,26 @@ OrderCriteria: Ascending
 	*$$ = "desc";
 	//std::cout<<"Reached Order:desc\n";
 };
-WhereCondition: Where Exp
-{
-	$$ = $2;
-	//std::cout<<"Reached WhereCond\n";
-}
-| %empty
+WhereCondition: 
+ Where Mult
 {
 	$$ = NULL;
 	//std::cout<<"Reached WhereCond\n";
-};
-LimitExp: Limit Value
+}
+| Where Exp
 {
 	$$ = $2;
-}
-| %empty
+	//std::cout<<"Reached WhereCond\n";
+};
+LimitExp: 
+LIMIT Mult
 {
 	$$ = -1;
+} | Limit Value
+{
+	$$ = yylval.value;
 };
+
 AggregateFunction: Maximum
 {
 	$$ = new std::string("max");
@@ -138,55 +145,66 @@ AggregateFunction: Maximum
 {
 	$$ = new std::string("sum");
 };
-AggCol: AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
+AggCol: 
+ Mult
+{
+	$$ =  new std::vector<std::pair<std::string,ExpressionNode*>>;
+}
+| AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
 	$$ = $5;
 	$$->push_back(std::make_pair($1,$3));
-}
-|  %empty
-{
-	$$ =  new std::vector<std::pair<std::string,ExpressionNode*>>;
 };
-MultiAggCol: MultiAggCol Comma AggregateFunction OpeningBracket Exp ClosingBracket
+MultiAggCol: 
+/*empty*/
+{
+	$$ = new std::vector<std::pair<std::string,ExpressionNode*>>;
+}
+| MultiAggCol Comma AggregateFunction OpeningBracket Exp ClosingBracket
 {
 	$$ = $1;
 	$$->push_back(std::make_pair(*$3,$5));
-}
-| %empty
-{
-	$$ = new std::vector<std::pair<std::string,ExpressionNode*>>;
 };
 SelectCol: Identifier MultiCol
 {
 	$$ = $2;
-	$$->push_back(*$1);
+	$$->push_back(*(yylval.identifier));
 	//std::cout<<"Reached Select_Col\n";
 }
 | Mult
 {
 	$$ = new std::vector<std::string>;
-	for(auto it: column_map)
-		$$->push_back(it.first);
+	update_columns($$);
 	//std::cout<<"Reached Select_Col\n";	
 };
-MultiCol: MultiCol Comma Identifier
-{
-	$$ = $1;
-	$1->push_back(*$3);
-}	
-|  %empty 
+
+MultiCol:
+/*empty*/
 {
 	$$ = new std::vector<std::string>;
-};
-GroupExp: Group By Exp
-{
-	$$ = $3;
 }
-| %empty
+|  MultiCol Comma Identifier
+{
+	$$ = $1;
+	$1->push_back(*(yylval.identifier));
+};
+
+GroupExp: 
+Group By Mult
 {
 	$$ = NULL;
+}
+| Group By Exp
+{
+	$$ = $3;
 };
-OrderExp: Order By Exp OrderCriteria ExpList
+
+OrderExp: 
+Order By Mult
+{
+	$$ = new std::vector<std::pair<ExpressionNode*,bool>>;
+}
+| Order By Exp OrderCriteria ExpList
 {
 	$$ = $5;
 	$$->push_back(std::make_pair($3,$4));
@@ -195,12 +213,14 @@ OrderExp: Order By Exp OrderCriteria ExpList
 {
 	$$ = $4;
 	$$->push_back(std::make_pair($3,true));
-}
-| %empty
+};
+
+ExpList: 
+/*empty*/
 {
 	$$ = new std::vector<std::pair<ExpressionNode*,bool>>;
-};
-ExpList: ExpList Comma Exp
+}
+| ExpList Comma Exp
 {
 	$$ = $1;
 	$$.push_back(std::make_pair($3,true));
@@ -209,11 +229,8 @@ ExpList: ExpList Comma Exp
 {
 	$$ = $1;
 	$$->push_back(std::make_pair($3,$4));
-}
-| %empty
-{
-	$$ = new std::vector<std::pair<ExpressionNode*,bool>>;
-};
+}; 
+
 Exp: Exp Or Exp1
 {
 	$$ = new ExpressionNode("or");
@@ -231,7 +248,7 @@ Exp: Exp Or Exp1
 | Not Exp1
 {
 	$$ = new ExpressionNode();
-	$$->exp_operator = "Not";
+	$$->exp_operator = "not";
 	$$->left_hand_term = $2;
 	if($$->type != 1)
 		YYABORT;
@@ -300,6 +317,7 @@ Exp1: Exp1 Greater Exp2
 {
 	$$ = $1;
 };
+
 Exp2: Exp2 Plus Exp3
 {
 	$$ = new ExpressionNode("Plus");
@@ -352,59 +370,63 @@ Exp3: Exp3 Mult Term
 Term: Column
 {
 	$$ = new ExpressionNode();
-	$$->column_name = $1;
-	$$->type_of_expr =  column_map[$1];
+	$$->column_name = *(yylval.identfier);
+	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
 {
 	$$ = new ExpressionNode();
-	$$->value = $1;
-	$$->type_of_expr =  (floor($1) == $1)?2:3;
+	$$->value = yylval.value;
+	$$->type_of_expr =  (floor(yylval.value) == yylval.value)?2:3;
 }
 | OpeningBracket Exp ClosingBracket
 {
 	$$ = $2;
 };
 %%
-void yyerror(SelectQuery* select_query,std::map<std::string,int> column_map,const char* error_msg)
+void yyerror(const char* error_msg)
 {
 	std::cout<<"Failed due to: "<<error_msg<<'\n';
 	return;
 }
-int main(void)
+
+void update_query(SelectQuery* sq)
 {
-	column_map["vehicle_id"] = 2;
-	column_map["database_index"] = 2;
-	column_map["oil_life_pct"] = 3;
-	column_map["tire_p_fl"] = column_map["tire_p_fr"] = column_map["tire_p_rl"] = column_map["tire_p_rr"] = 3;
-	column_map["batt_volt"] = 3;
-	column_map["fuel_percentage"] = 3;
-	column_map["accel"] = 1;
-	column_map["seatbelt"] = column_map["door_lock"] = column_map["hard_brake"] = column_map["gear_toggle"] = 1;
-	column_map["clutch"] = column_map["hard_steer"] = 1;  
-	column_map["speed"] = column_map["distance"] = 3;
-	SelectQuery* select_query;
-	yyparse(select_query,column_map);
-	std::cout<<select_query<<'\n';
+	select_query = sq;
 }
-//SelectQuery* process_query(std::string query)
-//{
-	//if(column_map.size() == 0)
-	//{
-		//column_map["vehicle_id"] = 2;
-		//column_map["database_index"] = 2;
-		//column_map["oil_life_pct"] = 3;
-		//column_map["tire_p_fl"] = column_map["tire_p_fr"] = column_map["tire_p_rl"] = column_map["tire_p_rr"] = 3;
-		//column_map["batt_volt"] = 3;
-		//column_map["fuel_percentage"] = 3;
-		//column_map["accel"] = 1;
-		//column_map["seatbelt"] = column_map["door_lock"] = column_map["hard_brake"] = column_map["gear_toggle"] = 1;
-		//column_map["clutch"] = column_map["hard_steer"] = 1;  
-		//column_map["speed"] = column_map["distance"] = 3;
-//	}
-	//SelectQuery* select_query;
-	//yy_scan_string(query.c_str());
-	//yyparse(select_query,column_map);
-	//yylex_destroy();
-	//return select_query;
-//}
+void update_columns(std::vector<std::string>* v)
+{
+	for(auto it: column_map)
+	{
+		v->push_back(it.first);
+	}
+}
+int get_type(std::string column)
+{
+	return column_map[column];
+}
+bool find_column(std::string column)
+{
+	return (column_map.find(column) != column_map.end());
+}
+SelectQuery* process_query(std::string query)
+{
+	if(column_map.size() == 0)
+	{
+		column_map["vehicle_id"] = 2;
+		column_map["database_index"] = 2;
+		column_map["oil_life_pct"] = 3;
+		column_map["tire_p_fl"] = column_map["tire_p_fr"] = column_map["tire_p_rl"] = column_map["tire_p_rr"] = 3;
+		column_map["batt_volt"] = 3;
+		column_map["fuel_percentage"] = 3;
+		column_map["accel"] = 1;
+		column_map["seatbelt"] = column_map["door_lock"] = column_map["hard_brake"] = column_map["gear_toggle"] = 1;
+		column_map["clutch"] = column_map["hard_steer"] = 1;  
+		column_map["speed"] = column_map["distance"] = 3;
+	}
+	select_query = NULL;
+	yy_scan_string(query.c_str());
+	yyparse();
+	yylex_destroy();
+	return select_query;
+}
