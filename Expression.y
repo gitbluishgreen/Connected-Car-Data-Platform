@@ -5,6 +5,7 @@
 	#include <utility>
 	#include <vector>
 	#include <map>
+	#include <cmath>
 	#include "proj_types.hpp"
 	void yyerror(const char*);
 	int yyparse(void);
@@ -20,8 +21,8 @@
 %}
 %union
 {
-    double value;
-    std::string* identifier;
+	double value;
+	std::string* identifier;
 	class SelectQuery* SelectObject;
 	bool distinct;
 	class ExpressionNode* expression;
@@ -32,89 +33,111 @@
 %start goal;
 %type <SelectObject> Select_Query goal
 %type <value> LimitExp 
-%type <distinct> DistinctQualifier
+%type <distinct> DistinctQualifier  OrderCriteria
 %type <expression_list> MultiAggCol AggCol
-%type <name_list> SelectCol MultiCol
+%type <name_list> Columns MultiCol
 %type <order_list> OrderExp ExpList
 %type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp 
-%type <identifier> Column AggregateFunction OrderCriteria
-%token Plus Minus Mult Div Modulo NotEqual Equal Greater GreaterEqual Lesser LesserEqual Or And Not Where Order Group By Limit Distinct Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
+%type <identifier> AggregateFunction
+%token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Where Order Group By Limit Distinct Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
 %%
 goal: Select_Query
 {
 	$$ = $1;
-	//update_query($$);
+	update_query($$);
 };
-Select_Query: SelectCol DistinctQualifier WhereCondition GroupExp OrderExp LimitExp
+Select_Query: Select DistinctQualifier Columns WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery;
+	$$ = new SelectQuery();
 	$$->distinct_query = false;
-	for(auto it: *$1)
+	for(auto it: *$3)
 	{
 		if(!find_column(it))
 			YYABORT;
 	}
-	$$->select_columns = *$1;
+	$$->select_columns = *$3;
 	$$->distinct_query = $2;
-	$$->select_expression = $3;
-	$$->group_term = $4;
-	$$->order_term = *$5;
-	$$->limit_term = $6;
+	$$->select_expression = $4;
+	$$->group_term = $5;
+	$$->order_term = *$6;
+	$$->limit_term = $7;
 	//std::cout<<"Reached Select_Query\n";
 }
-| AggCol DistinctQualifier WhereCondition GroupExp OrderExp LimitExp
+| Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery;
+	$$ = new SelectQuery();
 	$$->distinct_query = false;
-	$$->aggregate_columns = *$1;
-	$$->distinct_query = $2;
-	$$->select_expression = $3;
-	$$->group_term = $4;
+	$$->select_expression =  $3;
+	$$->group_expression = $4;
 	$$->order_term = *$5;
-	$$->limit_term = $6;
-	//std::cout<<"Reached Select_Query\n";
+	$$->limit_term = $6;  
 };
+
 DistinctQualifier: 
-Mult
-{
-	$$ = false;
-}
-| Distinct
+Distinct
 {
 	$$ = true;
-};
-Column: Identifier
+}
+| /*empty*/
 {
-	$$ = *(yylval.identifier);	
+	$$ = false;
+};
+Columns: Identifier MultiCol
+{
+	$$ = $2;
+	$$->push_back(*(yylval.identifier));
+}
+|
+Mult
+{
+	$$ = new std::vector<std::string>();
+	update_columns($$);
+};
+MultiCol: MultiCol Comma Identifier
+{
+	$$ = $1;
+	$$->push_back(*(yylval.identifier));
+}
+| 
+/*empty*/
+{
+	$$ = new std::vector<std::string>();
 };
 OrderCriteria: Ascending
 {
-	*$$ = "asc";
+	$$ = true;
 	//std::cout<<"Reached Order:Asc\n";
 }
 | Descending
 {
-	*$$ = "desc";
+	$$ = false;
 	//std::cout<<"Reached Order:desc\n";
+}
+|
+/*empty*/
+{
+	$$ = true;
 };
 WhereCondition: 
- Where Mult
-{
-	$$ = NULL;
-	//std::cout<<"Reached WhereCond\n";
-}
-| Where Exp
+ Where Exp
 {
 	$$ = $2;
 	//std::cout<<"Reached WhereCond\n";
+}
+|
+/*empty*/
+{
+	$$ = NULL;
 };
 LimitExp: 
-LIMIT Mult
+Limit Value
 {
-	$$ = -1;
-} | Limit Value
+	$$ = floor(yylval.value);
+}
+|
+/*empty*/
 {
-	$$ = yylval.value;
+	$$ = NULL;
 };
 
 AggregateFunction: Maximum
@@ -146,89 +169,53 @@ AggregateFunction: Maximum
 	$$ = new std::string("sum");
 };
 AggCol: 
- Mult
-{
-	$$ =  new std::vector<std::pair<std::string,ExpressionNode*>>;
-}
-| AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
+AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
 	$$ = $5;
 	$$->push_back(std::make_pair($1,$3));
 };
-MultiAggCol: 
+MultiAggCol: Comma AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
+{
+	$$ = $6;
+	$$->push_back(std::make_pair(*$2,$4));
+}
+|
 /*empty*/
 {
 	$$ = new std::vector<std::pair<std::string,ExpressionNode*>>;
-}
-| MultiAggCol Comma AggregateFunction OpeningBracket Exp ClosingBracket
-{
-	$$ = $1;
-	$$->push_back(std::make_pair(*$3,$5));
 };
-SelectCol: Identifier MultiCol
-{
-	$$ = $2;
-	$$->push_back(*(yylval.identifier));
-	//std::cout<<"Reached Select_Col\n";
-}
-| Mult
-{
-	$$ = new std::vector<std::string>;
-	update_columns($$);
-	//std::cout<<"Reached Select_Col\n";	
-};
-
-MultiCol:
-/*empty*/
-{
-	$$ = new std::vector<std::string>;
-}
-|  MultiCol Comma Identifier
-{
-	$$ = $1;
-	$1->push_back(*(yylval.identifier));
-};
-
 GroupExp: 
-Group By Mult
-{
-	$$ = NULL;
-}
-| Group By Exp
+Group By Exp
 {
 	$$ = $3;
+}
+|
+/*empty*/
+{
+	$$ = NULL;
 };
 
 OrderExp: 
-Order By Mult
+Order By ExpList
 {
-	$$ = new std::vector<std::pair<ExpressionNode*,bool>>;
+	$$ = $3;
 }
-| Order By Exp OrderCriteria ExpList
-{
-	$$ = $5;
-	$$->push_back(std::make_pair($3,$4));
-}
-| Order By Exp ExpList
-{
-	$$ = $4;
-	$$->push_back(std::make_pair($3,true));
-};
-
-ExpList: 
+|
 /*empty*/
 {
-	$$ = new std::vector<std::pair<ExpressionNode*,bool>>;
-}
-| ExpList Comma Exp
+	$$ = NULL;
+};
+ExpList: 
+Exp OrderCriteria ExpList
 {
-	$$ = $1;
-	$$.push_back(std::make_pair($3,true));
+	$$ = $3;
+	$$->push_back(std::make_pair($1,$2));
 }
-| ExpList Comma Exp OrderCriteria 
+| 
+Exp OrderCriteria 
 {
-	$$ = $1;
-	$$->push_back(std::make_pair($3,$4));
+	$$ = new std::vector<std::pair<ExpressionNode*,bool>>();
+	$$->push_back(std::make_pair($1,$2));
 }; 
 
 Exp: Exp Or Exp1
@@ -295,7 +282,7 @@ Exp1: Exp1 Greater Exp2
 		YYABORT;
 	$$->type_of_expr =  1;
 }
-| Exp1 Equal Exp2
+| Exp1 DoubleEqual Exp2
 {
 	$$ = new ExpressionNode("Equal");
 	$$->left_hand_term = $1;
@@ -366,8 +353,14 @@ Exp3: Exp3 Mult Term
 	if($1->type !=  2 || $3->type != 2)
 		YYABORT;
 	$$->type_of_expr =  2;
+}
+|
+Term
+{
+	$$ = $1;
 };
-Term: Column
+
+Term: Identifier
 {
 	$$ = new ExpressionNode();
 	$$->column_name = *(yylval.identfier);

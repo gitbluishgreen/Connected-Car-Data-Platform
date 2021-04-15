@@ -1,4 +1,4 @@
-%{
+%{";"
 #include <iostream>
 #include <string>
 #include <stdlib.h>
@@ -13,24 +13,26 @@ value ^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$
 identifier [a-zA-Z_][0-9a-zA-Z_]*
 space "\t"|"\n"|"\r"|"\f"|" "
 %% 
+{space} {}
 {value}  {yylval.value = std::stod(yytext);return Value;}
 "+" {return Plus;}
 "-"  {return Minus;}
 "*" {return Mult;}
 "/" {return Div;}
 "%" {return Modulo;}
-"==" {return Equal;}
+"==" {return DoubleEqual;}
 "!=" {return NotEqual;}
+"!" {return Not;}
 ">=" {return GreaterEqual;}
 "<=" {return LesserEqual;}
 ">" {return Greater;}
 "<" {return Lesser;}
-"!" {return Not;}
 "(" {return OpeningBracket;}
 ")" {return ClosingBracket;}
 "," {return Comma;}
 "&&" {return And;}
 "||" {return Or;}
+"SELECT" {return Select;}
 "LIMIT" {return Limit;}
 "ORDER" {return Order;}
 "BY" {return By;}
@@ -41,15 +43,14 @@ space "\t"|"\n"|"\r"|"\f"|" "
 "DESC" {return Descending;}
 "MIN" {return Minimum;}
 "MAX" {return Maximum;}
-"AVG" {return Average;}
+"AVERAGE" {return Average;}
 "SUM" {return Sum;}
-"VAR" {return Variance;}
+"VARIANCE" {return Variance;}
 "STDDEV" {return StandardDeviation;}
 "COUNT" {return Count;}
 {identifier} {yylval.identifier = new std::string(yytext); return Identifier;}
-{space} {;}
 %%
-SelectQuery* process_query(std::string);
+
 void show(SelectQuery* s)
 {
 	for(auto it: s->select_columns)
