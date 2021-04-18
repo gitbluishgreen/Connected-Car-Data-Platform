@@ -55,7 +55,7 @@ extern int yydebug;
     Div = 261,
     Modulo = 262,
     NotEqual = 263,
-    Equal = 264,
+    DoubleEqual = 264,
     Greater = 265,
     GreaterEqual = 266,
     Lesser = 267,
@@ -63,26 +63,27 @@ extern int yydebug;
     Or = 269,
     And = 270,
     Not = 271,
-    Where = 272,
-    Order = 273,
-    Group = 274,
-    By = 275,
-    Limit = 276,
-    Distinct = 277,
-    Ascending = 278,
-    Descending = 279,
-    Comma = 280,
-    OpeningBracket = 281,
-    ClosingBracket = 282,
-    Maximum = 283,
-    Minimum = 284,
-    Average = 285,
-    Variance = 286,
-    StandardDeviation = 287,
-    Count = 288,
-    Sum = 289,
-    Identifier = 290,
-    Value = 291
+    Select = 272,
+    Where = 273,
+    Order = 274,
+    Group = 275,
+    By = 276,
+    Limit = 277,
+    Distinct = 278,
+    Ascending = 279,
+    Descending = 280,
+    Comma = 281,
+    OpeningBracket = 282,
+    ClosingBracket = 283,
+    Maximum = 284,
+    Minimum = 285,
+    Average = 286,
+    Variance = 287,
+    StandardDeviation = 288,
+    Count = 289,
+    Sum = 290,
+    Identifier = 291,
+    Value = 292
   };
 #endif
 /* Tokens.  */
@@ -92,7 +93,7 @@ extern int yydebug;
 #define Div 261
 #define Modulo 262
 #define NotEqual 263
-#define Equal 264
+#define DoubleEqual 264
 #define Greater 265
 #define GreaterEqual 266
 #define Lesser 267
@@ -100,35 +101,36 @@ extern int yydebug;
 #define Or 269
 #define And 270
 #define Not 271
-#define Where 272
-#define Order 273
-#define Group 274
-#define By 275
-#define Limit 276
-#define Distinct 277
-#define Ascending 278
-#define Descending 279
-#define Comma 280
-#define OpeningBracket 281
-#define ClosingBracket 282
-#define Maximum 283
-#define Minimum 284
-#define Average 285
-#define Variance 286
-#define StandardDeviation 287
-#define Count 288
-#define Sum 289
-#define Identifier 290
-#define Value 291
+#define Select 272
+#define Where 273
+#define Order 274
+#define Group 275
+#define By 276
+#define Limit 277
+#define Distinct 278
+#define Ascending 279
+#define Descending 280
+#define Comma 281
+#define OpeningBracket 282
+#define ClosingBracket 283
+#define Maximum 284
+#define Minimum 285
+#define Average 286
+#define Variance 287
+#define StandardDeviation 288
+#define Count 289
+#define Sum 290
+#define Identifier 291
+#define Value 292
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 22 "Expression.y"
+#line 23 "Expression.y"
 
-    double value;
-    std::string* identifier;
+	double value;
+	std::string* identifier;
 	class SelectQuery* SelectObject;
 	bool distinct;
 	class ExpressionNode* expression;
@@ -136,7 +138,7 @@ union YYSTYPE
 	std::vector<std::pair<std::string,ExpressionNode*>>* expression_list;
 	std::vector<std::pair<ExpressionNode*,bool>>* order_list;
 
-#line 140 "Expression.tab.hpp"
+#line 142 "Expression.tab.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

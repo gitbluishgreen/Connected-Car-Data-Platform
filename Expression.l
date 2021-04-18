@@ -38,7 +38,6 @@ space "\t"|"\n"|"\r"|"\f"|" "
 "BY" {return By;}
 "GROUP" {return Group;}
 "WHERE" {return Where;}
-"DISTINCT" {return Distinct;}
 "ASC" {return Ascending;}
 "DESC" {return Descending;}
 "MIN" {return Minimum;}

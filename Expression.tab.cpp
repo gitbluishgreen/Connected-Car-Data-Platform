@@ -74,6 +74,7 @@
 	#include <utility>
 	#include <vector>
 	#include <map>
+	#include <cmath>
 	#include "proj_types.hpp"
 	void yyerror(const char*);
 	int yyparse(void);
@@ -87,7 +88,7 @@
 	std::map<std::string,int> column_map; 
 	SelectQuery* select_query;
 
-#line 91 "Expression.tab.cpp"
+#line 92 "Expression.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -141,7 +142,7 @@ extern int yydebug;
     Div = 261,
     Modulo = 262,
     NotEqual = 263,
-    Equal = 264,
+    DoubleEqual = 264,
     Greater = 265,
     GreaterEqual = 266,
     Lesser = 267,
@@ -149,26 +150,27 @@ extern int yydebug;
     Or = 269,
     And = 270,
     Not = 271,
-    Where = 272,
-    Order = 273,
-    Group = 274,
-    By = 275,
-    Limit = 276,
-    Distinct = 277,
-    Ascending = 278,
-    Descending = 279,
-    Comma = 280,
-    OpeningBracket = 281,
-    ClosingBracket = 282,
-    Maximum = 283,
-    Minimum = 284,
-    Average = 285,
-    Variance = 286,
-    StandardDeviation = 287,
-    Count = 288,
-    Sum = 289,
-    Identifier = 290,
-    Value = 291
+    Select = 272,
+    Where = 273,
+    Order = 274,
+    Group = 275,
+    By = 276,
+    Limit = 277,
+    Distinct = 278,
+    Ascending = 279,
+    Descending = 280,
+    Comma = 281,
+    OpeningBracket = 282,
+    ClosingBracket = 283,
+    Maximum = 284,
+    Minimum = 285,
+    Average = 286,
+    Variance = 287,
+    StandardDeviation = 288,
+    Count = 289,
+    Sum = 290,
+    Identifier = 291,
+    Value = 292
   };
 #endif
 /* Tokens.  */
@@ -178,7 +180,7 @@ extern int yydebug;
 #define Div 261
 #define Modulo 262
 #define NotEqual 263
-#define Equal 264
+#define DoubleEqual 264
 #define Greater 265
 #define GreaterEqual 266
 #define Lesser 267
@@ -186,35 +188,36 @@ extern int yydebug;
 #define Or 269
 #define And 270
 #define Not 271
-#define Where 272
-#define Order 273
-#define Group 274
-#define By 275
-#define Limit 276
-#define Distinct 277
-#define Ascending 278
-#define Descending 279
-#define Comma 280
-#define OpeningBracket 281
-#define ClosingBracket 282
-#define Maximum 283
-#define Minimum 284
-#define Average 285
-#define Variance 286
-#define StandardDeviation 287
-#define Count 288
-#define Sum 289
-#define Identifier 290
-#define Value 291
+#define Select 272
+#define Where 273
+#define Order 274
+#define Group 275
+#define By 276
+#define Limit 277
+#define Distinct 278
+#define Ascending 279
+#define Descending 280
+#define Comma 281
+#define OpeningBracket 282
+#define ClosingBracket 283
+#define Maximum 284
+#define Minimum 285
+#define Average 286
+#define Variance 287
+#define StandardDeviation 288
+#define Count 289
+#define Sum 290
+#define Identifier 291
+#define Value 292
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 22 "Expression.y"
+#line 23 "Expression.y"
 
-    double value;
-    std::string* identifier;
+	double value;
+	std::string* identifier;
 	class SelectQuery* SelectObject;
 	bool distinct;
 	class ExpressionNode* expression;
@@ -222,7 +225,7 @@ union YYSTYPE
 	std::vector<std::pair<std::string,ExpressionNode*>>* expression_list;
 	std::vector<std::pair<ExpressionNode*,bool>>* order_list;
 
-#line 226 "Expression.tab.cpp"
+#line 229 "Expression.tab.cpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -539,21 +542,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  8
+#define YYFINAL  16
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   30
+#define YYLAST   94
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  37
+#define YYNTOKENS  38
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  11
+#define YYNNTS  19
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  16
+#define YYNRULES  52
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  29
+#define YYNSTATES  90
 
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   291
+#define YYMAXUTOK   292
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -594,15 +597,19 @@ static const yytype_int8 yytranslate[] =
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35,    36
+      35,    36,    37
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,    43,    43,    48,    65,    78,    82,   101,   112,   115,
-     149,   168,   174,   183,   186,   193,   203
+       0,    44,    44,    49,    64,    73,    79,    84,    91,    94,
+      99,   106,   110,   117,   121,   127,   131,   135,   139,   143,
+     147,   151,   155,   160,   165,   172,   176,   182,   187,   193,
+     197,   203,   209,   217,   225,   234,   239,   249,   259,   269,
+     279,   289,   299,   304,   314,   324,   328,   338,   348,   359,
+     364,   370,   376
 };
 #endif
 
@@ -612,13 +619,15 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "Plus", "Minus", "Mult", "Div", "Modulo",
-  "NotEqual", "Equal", "Greater", "GreaterEqual", "Lesser", "LesserEqual",
-  "Or", "And", "Not", "Where", "Order", "Group", "By", "Limit", "Distinct",
-  "Ascending", "Descending", "Comma", "OpeningBracket", "ClosingBracket",
-  "Maximum", "Minimum", "Average", "Variance", "StandardDeviation",
-  "Count", "Sum", "Identifier", "Value", "$accept", "goal", "Select_Query",
-  "DistinctQualifier", "WhereCondition", "LimitExp", "AggCol", "SelectCol",
-  "MultiCol", "GroupExp", "OrderExp", YY_NULLPTR
+  "NotEqual", "DoubleEqual", "Greater", "GreaterEqual", "Lesser",
+  "LesserEqual", "Or", "And", "Not", "Select", "Where", "Order", "Group",
+  "By", "Limit", "Distinct", "Ascending", "Descending", "Comma",
+  "OpeningBracket", "ClosingBracket", "Maximum", "Minimum", "Average",
+  "Variance", "StandardDeviation", "Count", "Sum", "Identifier", "Value",
+  "$accept", "goal", "Select_Query", "Columns", "MultiCol",
+  "OrderCriteria", "WhereCondition", "LimitExp", "AggregateFunction",
+  "AggCol", "MultiAggCol", "GroupExp", "OrderExp", "ExpList", "Exp",
+  "Exp1", "Exp2", "Exp3", "Term", YY_NULLPTR
 };
 #endif
 
@@ -630,11 +639,11 @@ static const yytype_int16 yytoknum[] =
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-     285,   286,   287,   288,   289,   290,   291
+     285,   286,   287,   288,   289,   290,   291,   292
 };
 # endif
 
-#define YYPACT_NINF (-30)
+#define YYPACT_NINF (-21)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -648,9 +657,15 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -5,   -30,   -30,     2,   -30,    -4,    -4,   -21,   -30,   -30,
-     -30,     0,     0,   -29,   -30,     3,     3,   -30,   -30,     4,
-       4,   -30,    -2,    -2,   -30,   -26,   -30,   -30,   -30
+     -12,    -4,    13,   -21,   -21,   -21,   -21,   -21,   -21,   -21,
+     -21,   -21,   -21,    -3,     6,    -3,   -21,    22,   -13,    30,
+     -13,    30,    38,   -20,   -13,   -21,   -21,     4,    53,    41,
+       5,   -21,    54,    57,    -6,    57,   -21,    53,    21,   -20,
+     -20,   -20,   -20,   -20,   -20,   -20,   -20,   -20,   -20,   -20,
+     -20,   -20,   -13,    56,    58,    52,    58,   -21,    53,    53,
+      41,    41,    41,    41,    41,    41,     5,     5,   -21,   -21,
+     -21,     4,   -13,    42,   -21,    25,   -21,   -21,   -21,    28,
+     -21,    55,   -21,   -21,   -13,   -13,   -21,    23,    52,   -21
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -658,23 +673,29 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,    10,    13,     0,     2,     0,     0,    11,     1,     5,
-       6,     0,     0,     0,     7,     0,     0,    14,    15,     0,
-       0,    16,     0,     0,     8,     0,     4,     3,     9
+       0,     0,     0,     2,     6,    16,    17,    18,    19,    20,
+      21,    22,     8,    13,     0,    13,     1,     5,     0,    27,
+       0,    27,     0,     0,     0,    50,    51,    12,    35,    42,
+      45,    49,     0,    29,     0,    29,     7,    34,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    15,    25,    15,    52,    32,    33,
+      41,    40,    36,    38,    37,    39,    43,    44,    46,    47,
+      48,    26,     0,     0,     3,     0,    23,     4,    28,    11,
+      14,     0,     9,    10,    31,     0,    30,     0,    25,    24
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -30,   -30,   -30,     1,    -1,   -11,   -30,   -30,   -30,    -3,
-      -6
+     -21,   -21,   -21,   -21,   -21,   -21,    66,    29,     8,   -21,
+      -2,    63,    59,     3,   -18,   -19,    27,    -1,   -10
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     3,     4,    11,    15,    26,     5,     6,     7,    19,
-      22
+      -1,     2,     3,    13,    17,    84,    19,    74,    14,    15,
+      76,    33,    54,    78,    79,    28,    29,    30,    31
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -682,41 +703,67 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-       1,     9,     8,    24,    13,    14,    17,    12,    18,    21,
-      28,    16,    27,    20,    23,     0,     0,     0,    10,    25,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       2
+      27,     4,    34,    23,    37,     1,    38,    24,    39,    40,
+      49,    50,    51,    16,    24,    18,    25,    26,    39,    40,
+      58,    59,    55,    25,    26,     5,     6,     7,     8,     9,
+      10,    11,    12,    20,    71,    39,    40,    39,    40,    68,
+      69,    70,    39,    40,    47,    48,    66,    67,    22,    57,
+      32,    88,    82,    83,     5,     6,     7,     8,     9,    10,
+      11,    41,    42,    43,    44,    45,    46,    87,    60,    61,
+      62,    63,    64,    65,    36,    52,    53,    72,    75,    80,
+      73,    21,    85,    81,    35,    77,    89,    86,     0,     0,
+       0,     0,     0,     0,    56
 };
 
 static const yytype_int8 yycheck[] =
 {
-       5,     5,     0,     5,    25,     5,    35,     6,     5,     5,
-      36,    12,    23,    16,    20,    -1,    -1,    -1,    22,    21,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      35
+      18,     5,    20,    16,    23,    17,    24,    27,    14,    15,
+       5,     6,     7,     0,    27,    18,    36,    37,    14,    15,
+      39,    40,    28,    36,    37,    29,    30,    31,    32,    33,
+      34,    35,    36,    27,    52,    14,    15,    14,    15,    49,
+      50,    51,    14,    15,     3,     4,    47,    48,    26,    28,
+      20,    28,    24,    25,    29,    30,    31,    32,    33,    34,
+      35,     8,     9,    10,    11,    12,    13,    85,    41,    42,
+      43,    44,    45,    46,    36,    21,    19,    21,    26,    37,
+      22,    15,    27,    75,    21,    56,    88,    84,    -1,    -1,
+      -1,    -1,    -1,    -1,    35
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     5,    35,    38,    39,    43,    44,    45,     0,     5,
-      22,    40,    40,    25,     5,    41,    41,    35,     5,    46,
-      46,     5,    47,    47,     5,    21,    42,    42,    36
+       0,    17,    39,    40,     5,    29,    30,    31,    32,    33,
+      34,    35,    36,    41,    46,    47,     0,    42,    18,    44,
+      27,    44,    26,    16,    27,    36,    37,    52,    53,    54,
+      55,    56,    20,    49,    52,    49,    36,    53,    52,    14,
+      15,     8,     9,    10,    11,    12,    13,     3,     4,     5,
+       6,     7,    21,    19,    50,    28,    50,    28,    53,    53,
+      54,    54,    54,    54,    54,    54,    55,    55,    56,    56,
+      56,    52,    21,    22,    45,    26,    48,    45,    51,    52,
+      37,    46,    24,    25,    43,    27,    51,    52,    28,    48
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    37,    38,    39,    39,    40,    40,    41,    42,    42,
-      43,    44,    44,    45,    45,    46,    47
+       0,    38,    39,    40,    40,    41,    41,    42,    42,    43,
+      43,    43,    44,    44,    45,    45,    46,    46,    46,    46,
+      46,    46,    46,    47,    48,    48,    49,    49,    50,    50,
+      51,    51,    52,    52,    52,    52,    53,    53,    53,    53,
+      53,    53,    53,    54,    54,    54,    55,    55,    55,    55,
+      56,    56,    56
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     1,     6,     6,     1,     1,     1,     1,     2,
-       1,     2,     1,     0,     3,     1,     1
+       0,     2,     1,     6,     6,     2,     1,     3,     0,     1,
+       1,     0,     2,     0,     2,     0,     1,     1,     1,     1,
+       1,     1,     1,     5,     6,     0,     3,     0,     3,     0,
+       3,     2,     3,     3,     2,     1,     3,     3,     3,     3,
+       3,     3,     1,     3,     3,     1,     3,     3,     3,     1,
+       1,     1,     3
 };
 
 
@@ -1412,155 +1459,524 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 44 "Expression.y"
+#line 45 "Expression.y"
 {
 	(yyval.SelectObject) = (yyvsp[0].SelectObject);
-	//update_query($$);
+	update_query((yyval.SelectObject));
 }
-#line 1421 "Expression.tab.cpp"
+#line 1468 "Expression.tab.cpp"
     break;
 
   case 3:
-#line 49 "Expression.y"
+#line 50 "Expression.y"
 {
 	(yyval.SelectObject) = new SelectQuery;
-	(yyval.SelectObject)->distinct_query = false;
-	for(auto it: *(yyvsp[-5].name_list))
+	for(auto it: *(yyvsp[-3].expression))
 	{
 		if(!find_column(it))
 			YYABORT;
 	}
-	(yyval.SelectObject)->select_columns = *(yyvsp[-5].name_list);
-	(yyval.SelectObject)->distinct_query = (yyvsp[-4].distinct);
+	(yyval.SelectObject)->select_columns = *(yyvsp[-4].name_list);
 	(yyval.SelectObject)->select_expression = (yyvsp[-3].expression);
 	(yyval.SelectObject)->group_term = (yyvsp[-2].expression);
 	(yyval.SelectObject)->order_term = *(yyvsp[-1].order_list);
 	(yyval.SelectObject)->limit_term = (yyvsp[0].value);
 	//std::cout<<"Reached Select_Query\n";
 }
-#line 1442 "Expression.tab.cpp"
+#line 1487 "Expression.tab.cpp"
     break;
 
   case 4:
-#line 66 "Expression.y"
+#line 65 "Expression.y"
 {
 	(yyval.SelectObject) = new SelectQuery;
-	(yyval.SelectObject)->distinct_query = false;
-	(yyval.SelectObject)->aggregate_columns = *(yyvsp[-5].expression_list);
-	(yyval.SelectObject)->distinct_query = (yyvsp[-4].distinct);
-	(yyval.SelectObject)->select_expression = (yyvsp[-3].expression);
+	(yyval.SelectObject)->select_expression =  (yyvsp[-3].expression);
 	(yyval.SelectObject)->group_term = (yyvsp[-2].expression);
 	(yyval.SelectObject)->order_term = *(yyvsp[-1].order_list);
-	(yyval.SelectObject)->limit_term = (yyvsp[0].value);
-	//std::cout<<"Reached Select_Query\n";
-}
-#line 1458 "Expression.tab.cpp"
-    break;
-
-  case 5:
-#line 79 "Expression.y"
-{
-	(yyval.distinct) = false;
-}
-#line 1466 "Expression.tab.cpp"
-    break;
-
-  case 6:
-#line 83 "Expression.y"
-{
-	(yyval.distinct) = true;
-}
-#line 1474 "Expression.tab.cpp"
-    break;
-
-  case 7:
-#line 102 "Expression.y"
-{
-	(yyval.expression) = NULL;
-	//std::cout<<"Reached WhereCond\n";
-}
-#line 1483 "Expression.tab.cpp"
-    break;
-
-  case 8:
-#line 113 "Expression.y"
-{
-	(yyval.value) = -1;
-}
-#line 1491 "Expression.tab.cpp"
-    break;
-
-  case 9:
-#line 116 "Expression.y"
-{
-	(yyval.value) = yylval.value;
+	(yyval.SelectObject)->limit_term = (yyvsp[0].value);  
 }
 #line 1499 "Expression.tab.cpp"
     break;
 
-  case 10:
-#line 150 "Expression.y"
-{
-	(yyval.expression_list) =  new std::vector<std::pair<std::string,ExpressionNode*>>;
-}
-#line 1507 "Expression.tab.cpp"
-    break;
-
-  case 11:
-#line 169 "Expression.y"
+  case 5:
+#line 74 "Expression.y"
 {
 	(yyval.name_list) = (yyvsp[0].name_list);
 	(yyval.name_list)->push_back(*(yylval.identifier));
-	//std::cout<<"Reached Select_Col\n";
+}
+#line 1508 "Expression.tab.cpp"
+    break;
+
+  case 6:
+#line 80 "Expression.y"
+{
+	(yyval.name_list) = new std::vector<std::string>();
+	update_columns((yyval.name_list));
 }
 #line 1517 "Expression.tab.cpp"
     break;
 
-  case 12:
-#line 175 "Expression.y"
-{
-	(yyval.name_list) = new std::vector<std::string>;
-	update_columns((yyval.name_list));
-	//std::cout<<"Reached Select_Col\n";	
-}
-#line 1527 "Expression.tab.cpp"
-    break;
-
-  case 13:
-#line 183 "Expression.y"
-{
-	(yyval.name_list) = new std::vector<std::string>;
-}
-#line 1535 "Expression.tab.cpp"
-    break;
-
-  case 14:
-#line 187 "Expression.y"
+  case 7:
+#line 85 "Expression.y"
 {
 	(yyval.name_list) = (yyvsp[-2].name_list);
-	(yyvsp[-2].name_list)->push_back(*(yylval.identifier));
+	(yyval.name_list)->push_back(*(yylval.identifier));
 }
-#line 1544 "Expression.tab.cpp"
+#line 1526 "Expression.tab.cpp"
     break;
 
-  case 15:
-#line 194 "Expression.y"
+  case 8:
+#line 91 "Expression.y"
 {
-	(yyval.expression) = NULL;
+	(yyval.name_list) = new std::vector<std::string>();
+}
+#line 1534 "Expression.tab.cpp"
+    break;
+
+  case 9:
+#line 95 "Expression.y"
+{
+	(yyval.distinct) = true;
+	//std::cout<<"Reached Order:Asc\n";
+}
+#line 1543 "Expression.tab.cpp"
+    break;
+
+  case 10:
+#line 100 "Expression.y"
+{
+	(yyval.distinct) = false;
+	//std::cout<<"Reached Order:desc\n";
 }
 #line 1552 "Expression.tab.cpp"
     break;
 
-  case 16:
-#line 204 "Expression.y"
+  case 11:
+#line 106 "Expression.y"
 {
-	(yyval.order_list) = new std::vector<std::pair<ExpressionNode*,bool>>;
+	(yyval.distinct) = true;
 }
 #line 1560 "Expression.tab.cpp"
     break;
 
+  case 12:
+#line 111 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[0].expression);
+	//std::cout<<"Reached WhereCond\n";
+}
+#line 1569 "Expression.tab.cpp"
+    break;
 
-#line 1564 "Expression.tab.cpp"
+  case 13:
+#line 117 "Expression.y"
+{
+	(yyval.expression) = NULL;
+}
+#line 1577 "Expression.tab.cpp"
+    break;
+
+  case 14:
+#line 122 "Expression.y"
+{
+	(yyval.value) = floor(yylval.value);
+}
+#line 1585 "Expression.tab.cpp"
+    break;
+
+  case 15:
+#line 127 "Expression.y"
+{
+	(yyval.value) = -1;
+}
+#line 1593 "Expression.tab.cpp"
+    break;
+
+  case 16:
+#line 132 "Expression.y"
+{
+	(yyval.identifier) = new std::string("max");
+}
+#line 1601 "Expression.tab.cpp"
+    break;
+
+  case 17:
+#line 136 "Expression.y"
+{
+	(yyval.identifier) = new std::string("min");
+}
+#line 1609 "Expression.tab.cpp"
+    break;
+
+  case 18:
+#line 140 "Expression.y"
+{
+	(yyval.identifier) = new std::string("avg");
+}
+#line 1617 "Expression.tab.cpp"
+    break;
+
+  case 19:
+#line 144 "Expression.y"
+{
+	(yyval.identifier) = new std::string("var");
+}
+#line 1625 "Expression.tab.cpp"
+    break;
+
+  case 20:
+#line 148 "Expression.y"
+{
+	(yyval.identifier) = new std::string("std");
+}
+#line 1633 "Expression.tab.cpp"
+    break;
+
+  case 21:
+#line 152 "Expression.y"
+{
+	(yyval.identifier) = new std::string("count");
+}
+#line 1641 "Expression.tab.cpp"
+    break;
+
+  case 22:
+#line 156 "Expression.y"
+{
+	(yyval.identifier) = new std::string("sum");
+}
+#line 1649 "Expression.tab.cpp"
+    break;
+
+  case 23:
+#line 161 "Expression.y"
+{
+	(yyval.expression_list) = (yyvsp[0].expression_list);
+	(yyval.expression_list)->push_back(std::make_pair(*(yyvsp[-4].identifier),(yyvsp[-2].expression)));
+}
+#line 1658 "Expression.tab.cpp"
+    break;
+
+  case 24:
+#line 166 "Expression.y"
+{
+	(yyval.expression_list) = (yyvsp[0].expression_list);
+	(yyval.expression_list)->push_back(std::make_pair(*(yyvsp[-4].identifier),(yyvsp[-2].expression)));
+}
+#line 1667 "Expression.tab.cpp"
+    break;
+
+  case 25:
+#line 172 "Expression.y"
+{
+	(yyval.expression_list) = new std::vector<std::pair<std::string,ExpressionNode*>>;
+}
+#line 1675 "Expression.tab.cpp"
+    break;
+
+  case 26:
+#line 177 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[0].expression);
+}
+#line 1683 "Expression.tab.cpp"
+    break;
+
+  case 27:
+#line 182 "Expression.y"
+{
+	(yyval.expression) = NULL;
+}
+#line 1691 "Expression.tab.cpp"
+    break;
+
+  case 28:
+#line 188 "Expression.y"
+{
+	(yyval.order_list) = (yyvsp[0].order_list);
+}
+#line 1699 "Expression.tab.cpp"
+    break;
+
+  case 29:
+#line 193 "Expression.y"
+{
+	(yyval.order_list) = NULL;
+}
+#line 1707 "Expression.tab.cpp"
+    break;
+
+  case 30:
+#line 198 "Expression.y"
+{
+	(yyval.order_list) = (yyvsp[0].order_list);
+	(yyval.order_list)->push_back(std::make_pair((yyvsp[-2].expression),(yyvsp[-1].distinct)));
+}
+#line 1716 "Expression.tab.cpp"
+    break;
+
+  case 31:
+#line 204 "Expression.y"
+{
+	(yyval.order_list) = new std::vector<std::pair<ExpressionNode*,bool>>();
+	(yyval.order_list)->push_back(std::make_pair((yyvsp[-1].expression),(yyvsp[0].distinct)));
+}
+#line 1725 "Expression.tab.cpp"
+    break;
+
+  case 32:
+#line 210 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "or";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1737 "Expression.tab.cpp"
+    break;
+
+  case 33:
+#line 218 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "and";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1749 "Expression.tab.cpp"
+    break;
+
+  case 34:
+#line 226 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "not";
+	(yyval.expression)->left_hand_term = (yyvsp[0].expression);
+	if((yyval.expression)->type_of_expr != 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1762 "Expression.tab.cpp"
+    break;
+
+  case 35:
+#line 235 "Expression.y"
+{
+	(yyval.expression)=(yyvsp[0].expression);
+}
+#line 1770 "Expression.tab.cpp"
+    break;
+
+  case 36:
+#line 240 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "greater";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1784 "Expression.tab.cpp"
+    break;
+
+  case 37:
+#line 250 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "lesser";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1798 "Expression.tab.cpp"
+    break;
+
+  case 38:
+#line 260 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "greaterequal";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1812 "Expression.tab.cpp"
+    break;
+
+  case 39:
+#line 270 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "lesserequal";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1826 "Expression.tab.cpp"
+    break;
+
+  case 40:
+#line 280 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "doubleequal";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1840 "Expression.tab.cpp"
+    break;
+
+  case 41:
+#line 290 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "notequal";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  1;
+}
+#line 1854 "Expression.tab.cpp"
+    break;
+
+  case 42:
+#line 300 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[0].expression);
+}
+#line 1862 "Expression.tab.cpp"
+    break;
+
+  case 43:
+#line 305 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "plus";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
+}
+#line 1876 "Expression.tab.cpp"
+    break;
+
+  case 44:
+#line 315 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "minus";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
+}
+#line 1890 "Expression.tab.cpp"
+    break;
+
+  case 45:
+#line 325 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[0].expression);
+}
+#line 1898 "Expression.tab.cpp"
+    break;
+
+  case 46:
+#line 329 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "mult";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  3;
+}
+#line 1912 "Expression.tab.cpp"
+    break;
+
+  case 47:
+#line 339 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "div";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  3;
+}
+#line 1926 "Expression.tab.cpp"
+    break;
+
+  case 48:
+#line 349 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->exp_operator = "modulo";
+	(yyval.expression)->left_hand_term = (yyvsp[-2].expression);
+	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
+	if((yyvsp[-2].expression)->type_of_expr !=  2 || (yyvsp[0].expression)->type_of_expr != 2)
+		YYABORT;
+	(yyval.expression)->type_of_expr =  2;
+}
+#line 1940 "Expression.tab.cpp"
+    break;
+
+  case 49:
+#line 360 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[0].expression);
+}
+#line 1948 "Expression.tab.cpp"
+    break;
+
+  case 50:
+#line 365 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->column_name = *(yylval.identifier);
+	(yyval.expression)->type_of_expr =  get_type((yyval.expression)->column_name);
+}
+#line 1958 "Expression.tab.cpp"
+    break;
+
+  case 51:
+#line 371 "Expression.y"
+{
+	(yyval.expression) = new ExpressionNode;
+	(yyval.expression)->value = yylval.value;
+	(yyval.expression)->type_of_expr =  (floor(yylval.value) == yylval.value)?2:3;
+}
+#line 1968 "Expression.tab.cpp"
+    break;
+
+  case 52:
+#line 377 "Expression.y"
+{
+	(yyval.expression) = (yyvsp[-1].expression);
+}
+#line 1976 "Expression.tab.cpp"
+    break;
+
+
+#line 1980 "Expression.tab.cpp"
 
       default: break;
     }
@@ -1792,7 +2208,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 386 "Expression.y"
+#line 380 "Expression.y"
 
 void yyerror(const char* error_msg)
 {
@@ -1819,6 +2235,7 @@ bool find_column(std::string column)
 {
 	return (column_map.find(column) != column_map.end());
 }
+
 SelectQuery* process_query(std::string query)
 {
 	if(column_map.size() == 0)

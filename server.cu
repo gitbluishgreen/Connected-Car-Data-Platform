@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <car.cu>
 #include <thrust/device_vector.h>
+#include "proj_types.hpp"
 Limits l();
 Table* t;
 GPSsystem* gps_object;
@@ -40,17 +41,24 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         SelectQuery* s;
         cudaHostAlloc((void**)&s,sizeof(Schema));
-        s->distinct_query = true;
+        ExpressionNode* gt;
+        cudaHostAlloc((void**)&gt,sizeof(ExpressionNode));
+        gt->column_name = "vehicle_id";
+        gt->left_hand_term = gt->right_hand_term = NULL;
+        s->group_term = gt;
         s->select_expression.push_back("vehicle_id");
-        std::set<Schema> sx = t->select(s);
+        std::set<Schema,select_comparator> sx = t->select(s);
+        /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
+        between listener thread and action thread, since an arbitrary thread handles the signal.)*/
         cudaFreeHost(s);
+        cudaFreeHost(gt);
         std::map<int,int> car_details;
         for(Schema& o: sx)
         {
             if(participating_cars.find(sx.vehicle_id) != participating_cars.end())
-                car_details[sx.vehicle_id] = sx.destination_vertex;
+                car_details[sx.vehicle_id] = sx.origin_vertex;
         }
-        gps_object->convoyNodeFinder(car_details);
+        gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
     }
     else if(*ptr == 2 || *ptr == 3)
     {
@@ -59,25 +67,8 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
         int sending_car = sig_details->si_pid;
         //dropped vertices haveto be computed randomly. 
         std::vector<int> path = gps_object->findGarageorBunk(sending_car,x);
-        char c[20];
-        sprintf(c,"shm_3_%d",sending_car);
-        fd = shm_open(c,O_CREAT | O_RDWR, 0666);
-        ftruncate(fd,4);
-        ptr = (int*)mmap(0,4,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-        *ptr = path.size();
-        sprintf(c,"shm_4_%d",sending_car);
-        fd = shm_open(c,O_CREAT|O_RDWR,0666);
-        ftruncate(fd,sizeof(int)*path.size());
-        int* ptr = (int*)mmap(0,path.size(),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-        for(int i = 0;i < path.size();i++)
-            ptr[i] = path[i];
-        kill(SIGUSR1,sending_car);//send the updated path back to the end user.
-    }
-    else if(*ptr == 3)
-    {
-        //garage request has been made. Rerout car to nearest garage.
-        int sending_car = sig_details->si_pid;
-        std::vector<int> path = gps_object->findGarageorBunk(sending_car,);
+         /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
+        between listener thread and action thread, since an arbitrary thread handles the signal.)*/
         char c[20];
         sprintf(c,"shm_3_%d",sending_car);
         fd = shm_open(c,O_CREAT | O_RDWR, 0666);
@@ -117,7 +108,7 @@ int main()
         std::cout<<"Error while initializing the signal handler!\n";
     }
     std::cin >>numberOfRows>>numberOfCars>>numberOfVertices;
-    t = new Table(1000000);
+    t = new Table(numberOfRows);
     int f[2];
     pipe(f);
     int fd = shm_open("adjacency_matrix",O_CREAT|O_RDWR,0666);

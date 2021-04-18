@@ -1,0 +1,924 @@
+yacc -Wall -d Expression.y -o Expression.tab.cpp
+Expression.y:91.1-93.1: warning: empty rule without %empty [-Wempty-rule]
+   91 | {
+      | ^
+      | %empty
+Expression.y:106.1-108.1: warning: empty rule without %empty [-Wempty-rule]
+  106 | {
+      | ^
+      | %empty
+Expression.y:117.1-119.1: warning: empty rule without %empty [-Wempty-rule]
+  117 | {
+      | ^
+      | %empty
+Expression.y:127.1-129.1: warning: empty rule without %empty [-Wempty-rule]
+  127 | {
+      | ^
+      | %empty
+Expression.y:172.1-174.1: warning: empty rule without %empty [-Wempty-rule]
+  172 | {
+      | ^
+      | %empty
+Expression.y:182.1-184.1: warning: empty rule without %empty [-Wempty-rule]
+  182 | {
+      | ^
+      | %empty
+Expression.y:193.1-195.1: warning: empty rule without %empty [-Wempty-rule]
+  193 | {
+      | ^
+      | %empty
+Expression.y: warning: fix-its can be applied.  Rerun with option '--update'. [-Wother]
+lex -o lex.yy.cpp Expression.l
+g++ Expression.tab.cpp lex.yy.cpp proj_types.hpp
+In file included from Expression.y:9:
+proj_types.hpp: In member function ‘int select_comparator::operator()(const Schema&, const Schema&)’:
+proj_types.hpp:251:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:251:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp:253:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:253:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp: At global scope:
+proj_types.hpp:369:5: error: ‘Limits’ does not name a type; did you mean ‘Limit’?
+  369 |     Limits l;
+      |     ^~~~~~
+      |     Limit
+proj_types.hpp:546:10: error: extra qualification ‘Table::’ on member ‘PrintDatabase’ [-fpermissive]
+  546 |     void Table::PrintDatabase()
+      |          ^~~~~
+proj_types.hpp: In member function ‘void Table::WriteRows()’:
+proj_types.hpp:376:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  376 |         cudaMalloc(&device_indices,num_mod_rows*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:381:61: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |                                                             ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:381:13: error: ‘cudaMemcpy’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |             ^~~~~~~~~~
+proj_types.hpp:384:9: error: ‘changeRowsKernel’ was not declared in this scope
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |         ^~~~~~~~~~~~~~~~
+proj_types.hpp:384:27: error: expected primary-expression before ‘<’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                           ^
+proj_types.hpp:384:35: error: expected primary-expression before ‘>’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                                   ^
+proj_types.hpp: In constructor ‘Table::Table(int, int, int)’:
+proj_types.hpp:399:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  399 |         cudaMalloc(&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp: In member function ‘void Table::state_update(Schema&)’:
+proj_types.hpp:424:29: error: ‘l’ was not declared in this scope
+  424 |         if(s.oil_life_pct < l.min_oil_level)
+      |                             ^
+proj_types.hpp:432:26: error: ‘l’ was not declared in this scope
+  432 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:440:26: error: ‘l’ was not declared in this scope
+  440 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:448:26: error: ‘l’ was not declared in this scope
+  448 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:456:26: error: ‘l’ was not declared in this scope
+  456 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:464:26: error: ‘l’ was not declared in this scope
+  464 |         if(s.batt_volt < l.min_voltage)
+      |                          ^
+proj_types.hpp:472:32: error: ‘l’ was not declared in this scope
+  472 |         if(s.fuel_percentage < l.min_fuel_percentage)
+      |                                ^
+proj_types.hpp:482:45: error: ‘l’ was not declared in this scope
+  482 |             row[7] = std::min(row[7]+1,(int)l.brake_violation_time);
+      |                                             ^
+proj_types.hpp:490:45: error: ‘l’ was not declared in this scope
+  490 |             row[8] = std::min(row[8]+1,(int)l.door_violation_time);
+      |                                             ^
+proj_types.hpp:498:45: error: ‘l’ was not declared in this scope
+  498 |             row[9] = std::min(row[9]+1,(int)l.steer_violation_time);
+      |                                             ^
+proj_types.hpp: In member function ‘std::set<Schema, select_comparator> Table::Select(SelectQuery*)’:
+proj_types.hpp:523:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  523 |         cudaMalloc(&selectedValues, numberOfRows*sizeof(int));//row indices that were selected
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:525:9: error: ‘cudaMemset’ was not declared in this scope
+  525 |         cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.
+      |         ^~~~~~~~~~
+proj_types.hpp:527:9: error: ‘selectKernel’ was not declared in this scope
+  527 |         selectKernel<<<nb, nt>>>(
+      |         ^~~~~~~~~~~~
+proj_types.hpp:527:23: error: expected primary-expression before ‘<’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                       ^
+proj_types.hpp:527:32: error: expected primary-expression before ‘>’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                                ^
+proj_types.hpp:534:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  534 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:64: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:9: error: ‘cudaMemcpy’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+proj_types.hpp:539:72: error: no matching function for call to ‘max(std::set<Schema, select_comparator>::size_type, int&)’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/ios:40,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.y:2:
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note: candidate: ‘template<class _Tp> constexpr const _Tp& std::max(const _Tp&, const _Tp&)’
+  222 |     max(const _Tp& __a, const _Tp& __b)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note:   template argument deduction/substitution failed:
+In file included from Expression.y:9:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/ios:40,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.y:2:
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr const _Tp& std::max(const _Tp&, const _Tp&, _Compare)’
+  268 |     max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note:   template argument deduction/substitution failed:
+In file included from Expression.y:9:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6,
+                 from Expression.y:9:
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note: candidate: ‘template<class _Tp> constexpr _Tp std::max(std::initializer_list<_Tp>)’
+ 3456 |     max(initializer_list<_Tp> __l)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note:   template argument deduction/substitution failed:
+In file included from Expression.y:9:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6,
+                 from Expression.y:9:
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr _Tp std::max(std::initializer_list<_Tp>, _Compare)’
+ 3462 |     max(initializer_list<_Tp> __l, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note:   template argument deduction/substitution failed:
+In file included from Expression.y:9:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+proj_types.hpp: At global scope:
+proj_types.hpp:561:26: error: extra qualification ‘GPSSystem::’ on member ‘djikstra_result’ [-fpermissive]
+  561 |     std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDroppedVertices)
+      |                          ^~~~~~~~~
+In file included from Expression.y:9:
+proj_types.hpp:656:22: error: extra qualification ‘GPSSystem::’ on member ‘PathFinder’ [-fpermissive]
+  656 |     std::vector<int> GPSSystem::PathFinder(int source, int destination,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+proj_types.hpp:741:22: error: extra qualification ‘GPSSystem::’ on member ‘findGarageOrBunk’ [-fpermissive]
+  741 |     std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+In file included from Expression.y:9:
+proj_types.hpp: In member function ‘std::pair<int*, int*> GPSSystem::djikstra_result(int, std::set<int>&)’:
+proj_types.hpp:577:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  577 |         cudaMalloc(&deviceDroppedVertices, numberOfDroppedVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:578:101: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |                                                                                                     ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:578:9: error: ‘cudaMemcpy’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |         ^~~~~~~~~~
+In file included from Expression.y:9:
+proj_types.hpp:584:13: error: ‘DropVerticesKernel’ was not declared in this scope
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |             ^~~~~~~~~~~~~~~~~~
+proj_types.hpp:584:33: error: expected primary-expression before ‘<’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                 ^
+proj_types.hpp:584:42: error: expected primary-expression before ‘>’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                          ^
+proj_types.hpp:585:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  585 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:617:17: error: ‘FindMinDistance’ was not declared in this scope; did you mean ‘hostMinDistance’?
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                 ^~~~~~~~~~~~~~~
+      |                 hostMinDistance
+proj_types.hpp:617:34: error: expected primary-expression before ‘<’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                  ^
+proj_types.hpp:617:43: error: expected primary-expression before ‘>’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                           ^
+proj_types.hpp:623:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  623 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:624:17: error: ‘FindArgMin’ was not declared in this scope
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                 ^~~~~~~~~~
+proj_types.hpp:624:29: error: expected primary-expression before ‘<’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                             ^
+proj_types.hpp:624:38: error: expected primary-expression before ‘>’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                                      ^
+proj_types.hpp:632:17: error: ‘Relax’ was not declared in this scope
+  632 |                 Relax<<<nb, nt>>>(
+      |                 ^~~~~
+proj_types.hpp:632:24: error: expected primary-expression before ‘<’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                        ^
+proj_types.hpp:632:33: error: expected primary-expression before ‘>’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                                 ^
+proj_types.hpp:644:76: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  644 |         cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                            ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::PathFinder(int, int, std::set<int>&)’:
+proj_types.hpp:660:68: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                    ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:660:5: error: ‘cudaMemcpy’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |     ^~~~~~~~~~
+proj_types.hpp: In member function ‘void GPSSystem::convoyNodeFinder(std::map<int, int>&)’:
+proj_types.hpp:678:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  678 |         cudaMalloc(&sum_array,numberOfVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:680:9: error: ‘set_zero’ was not declared in this scope
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |         ^~~~~~~~
+proj_types.hpp:680:19: error: expected primary-expression before ‘<’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                   ^
+proj_types.hpp:680:27: error: expected primary-expression before ‘>’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                           ^
+proj_types.hpp:681:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  681 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:704:13: error: ‘addMatrix’ was not declared in this scope
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |             ^~~~~~~~~
+proj_types.hpp:704:24: error: expected primary-expression before ‘<’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                        ^
+proj_types.hpp:704:32: error: expected primary-expression before ‘>’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                                ^
+proj_types.hpp:707:25: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                         ^~~~~~
+proj_types.hpp:707:45: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                                             ^~~~~~
+proj_types.hpp:728:18: error: redeclaration of ‘int* ptr’
+  728 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:733:18: error: redeclaration of ‘int* ptr’
+  733 |             int* ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::findGarageOrBunk(int, int, std::set<int>&)’:
+proj_types.hpp:745:72: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                        ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:745:9: error: ‘cudaMemcpy’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+Expression.y: In function ‘int yyparse()’:
+Expression.y:52:37: error: ‘begin’ was not declared in this scope; did you mean ‘std::begin’?
+   52 |  for(auto it: *$3)
+      |                                     ^
+      |                                     std::begin
+In file included from /usr/include/c++/9/string:54,
+                 from /usr/include/c++/9/bits/locale_classes.h:40,
+                 from /usr/include/c++/9/bits/ios_base.h:41,
+                 from /usr/include/c++/9/ios:42,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.y:2:
+/usr/include/c++/9/bits/range_access.h:105:37: note: ‘std::begin’ declared here
+  105 |   template<typename _Tp> const _Tp* begin(const valarray<_Tp>&);
+      |                                     ^~~~~
+Expression.y:52:37: error: ‘end’ was not declared in this scope; did you mean ‘std::end’?
+   52 |  for(auto it: *$3)
+      |                                     ^
+      |                                     std::end
+In file included from /usr/include/c++/9/string:54,
+                 from /usr/include/c++/9/bits/locale_classes.h:40,
+                 from /usr/include/c++/9/bits/ios_base.h:41,
+                 from /usr/include/c++/9/ios:42,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.y:2:
+/usr/include/c++/9/bits/range_access.h:107:37: note: ‘std::end’ declared here
+  107 |   template<typename _Tp> const _Tp* end(const valarray<_Tp>&);
+      |                                     ^~~
+In file included from Expression.l:6:
+proj_types.hpp: In member function ‘int select_comparator::operator()(const Schema&, const Schema&)’:
+proj_types.hpp:251:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:251:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp:253:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:253:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp: At global scope:
+proj_types.hpp:369:5: error: ‘Limits’ does not name a type; did you mean ‘Limit’?
+  369 |     Limits l;
+      |     ^~~~~~
+      |     Limit
+proj_types.hpp:546:10: error: extra qualification ‘Table::’ on member ‘PrintDatabase’ [-fpermissive]
+  546 |     void Table::PrintDatabase()
+      |          ^~~~~
+proj_types.hpp: In member function ‘void Table::WriteRows()’:
+proj_types.hpp:376:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  376 |         cudaMalloc(&device_indices,num_mod_rows*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:381:61: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |                                                             ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:381:13: error: ‘cudaMemcpy’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |             ^~~~~~~~~~
+proj_types.hpp:384:9: error: ‘changeRowsKernel’ was not declared in this scope
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |         ^~~~~~~~~~~~~~~~
+proj_types.hpp:384:27: error: expected primary-expression before ‘<’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                           ^
+proj_types.hpp:384:35: error: expected primary-expression before ‘>’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                                   ^
+proj_types.hpp: In member function ‘void Table::init_bt(int)’:
+proj_types.hpp:390:14: error: ‘ceil’ was not declared in this scope
+  390 |         nb = ceil((1.0*num_threads)/1024);
+      |              ^~~~
+proj_types.hpp: In constructor ‘Table::Table(int, int, int)’:
+proj_types.hpp:399:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  399 |         cudaMalloc(&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp: In member function ‘void Table::state_update(Schema&)’:
+proj_types.hpp:424:29: error: ‘l’ was not declared in this scope
+  424 |         if(s.oil_life_pct < l.min_oil_level)
+      |                             ^
+proj_types.hpp:432:26: error: ‘l’ was not declared in this scope
+  432 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:440:26: error: ‘l’ was not declared in this scope
+  440 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:448:26: error: ‘l’ was not declared in this scope
+  448 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:456:26: error: ‘l’ was not declared in this scope
+  456 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:464:26: error: ‘l’ was not declared in this scope
+  464 |         if(s.batt_volt < l.min_voltage)
+      |                          ^
+proj_types.hpp:472:32: error: ‘l’ was not declared in this scope
+  472 |         if(s.fuel_percentage < l.min_fuel_percentage)
+      |                                ^
+proj_types.hpp:482:45: error: ‘l’ was not declared in this scope
+  482 |             row[7] = std::min(row[7]+1,(int)l.brake_violation_time);
+      |                                             ^
+proj_types.hpp:490:45: error: ‘l’ was not declared in this scope
+  490 |             row[8] = std::min(row[8]+1,(int)l.door_violation_time);
+      |                                             ^
+proj_types.hpp:498:45: error: ‘l’ was not declared in this scope
+  498 |             row[9] = std::min(row[9]+1,(int)l.steer_violation_time);
+      |                                             ^
+proj_types.hpp: In member function ‘std::set<Schema, select_comparator> Table::Select(SelectQuery*)’:
+proj_types.hpp:523:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  523 |         cudaMalloc(&selectedValues, numberOfRows*sizeof(int));//row indices that were selected
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:525:9: error: ‘cudaMemset’ was not declared in this scope
+  525 |         cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.
+      |         ^~~~~~~~~~
+proj_types.hpp:527:9: error: ‘selectKernel’ was not declared in this scope
+  527 |         selectKernel<<<nb, nt>>>(
+      |         ^~~~~~~~~~~~
+proj_types.hpp:527:23: error: expected primary-expression before ‘<’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                       ^
+proj_types.hpp:527:32: error: expected primary-expression before ‘>’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                                ^
+proj_types.hpp:534:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  534 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:64: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:9: error: ‘cudaMemcpy’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+proj_types.hpp:539:72: error: no matching function for call to ‘max(std::set<Schema, select_comparator>::size_type, int&)’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/ios:40,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.l:2:
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note: candidate: ‘template<class _Tp> constexpr const _Tp& std::max(const _Tp&, const _Tp&)’
+  222 |     max(const _Tp& __a, const _Tp& __b)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note:   template argument deduction/substitution failed:
+In file included from Expression.l:6:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/ios:40,
+                 from /usr/include/c++/9/ostream:38,
+                 from /usr/include/c++/9/iostream:39,
+                 from Expression.l:2:
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr const _Tp& std::max(const _Tp&, const _Tp&, _Compare)’
+  268 |     max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note:   template argument deduction/substitution failed:
+In file included from Expression.l:6:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6,
+                 from Expression.l:6:
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note: candidate: ‘template<class _Tp> constexpr _Tp std::max(std::initializer_list<_Tp>)’
+ 3456 |     max(initializer_list<_Tp> __l)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note:   template argument deduction/substitution failed:
+In file included from Expression.l:6:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6,
+                 from Expression.l:6:
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr _Tp std::max(std::initializer_list<_Tp>, _Compare)’
+ 3462 |     max(initializer_list<_Tp> __l, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note:   template argument deduction/substitution failed:
+In file included from Expression.l:6:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+proj_types.hpp: At global scope:
+proj_types.hpp:561:26: error: extra qualification ‘GPSSystem::’ on member ‘djikstra_result’ [-fpermissive]
+  561 |     std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDroppedVertices)
+      |                          ^~~~~~~~~
+In file included from Expression.l:6:
+proj_types.hpp:656:22: error: extra qualification ‘GPSSystem::’ on member ‘PathFinder’ [-fpermissive]
+  656 |     std::vector<int> GPSSystem::PathFinder(int source, int destination,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+proj_types.hpp:741:22: error: extra qualification ‘GPSSystem::’ on member ‘findGarageOrBunk’ [-fpermissive]
+  741 |     std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+In file included from Expression.l:6:
+proj_types.hpp: In member function ‘void GPSSystem::init_bt(int)’:
+proj_types.hpp:558:14: error: ‘ceil’ was not declared in this scope
+  558 |         nb = ceil(numThreads/1024.0);
+      |              ^~~~
+proj_types.hpp: In member function ‘std::pair<int*, int*> GPSSystem::djikstra_result(int, std::set<int>&)’:
+proj_types.hpp:577:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  577 |         cudaMalloc(&deviceDroppedVertices, numberOfDroppedVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:578:101: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |                                                                                                     ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:578:9: error: ‘cudaMemcpy’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |         ^~~~~~~~~~
+In file included from Expression.l:6:
+proj_types.hpp:584:13: error: ‘DropVerticesKernel’ was not declared in this scope
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |             ^~~~~~~~~~~~~~~~~~
+proj_types.hpp:584:33: error: expected primary-expression before ‘<’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                 ^
+proj_types.hpp:584:42: error: expected primary-expression before ‘>’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                          ^
+proj_types.hpp:585:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  585 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:617:17: error: ‘FindMinDistance’ was not declared in this scope; did you mean ‘hostMinDistance’?
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                 ^~~~~~~~~~~~~~~
+      |                 hostMinDistance
+proj_types.hpp:617:34: error: expected primary-expression before ‘<’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                  ^
+proj_types.hpp:617:43: error: expected primary-expression before ‘>’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                           ^
+proj_types.hpp:623:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  623 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:624:17: error: ‘FindArgMin’ was not declared in this scope
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                 ^~~~~~~~~~
+proj_types.hpp:624:29: error: expected primary-expression before ‘<’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                             ^
+proj_types.hpp:624:38: error: expected primary-expression before ‘>’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                                      ^
+proj_types.hpp:632:17: error: ‘Relax’ was not declared in this scope
+  632 |                 Relax<<<nb, nt>>>(
+      |                 ^~~~~
+proj_types.hpp:632:24: error: expected primary-expression before ‘<’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                        ^
+proj_types.hpp:632:33: error: expected primary-expression before ‘>’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                                 ^
+proj_types.hpp:644:76: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  644 |         cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                            ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::PathFinder(int, int, std::set<int>&)’:
+proj_types.hpp:660:68: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                    ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:660:5: error: ‘cudaMemcpy’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |     ^~~~~~~~~~
+proj_types.hpp: In member function ‘void GPSSystem::convoyNodeFinder(std::map<int, int>&)’:
+proj_types.hpp:678:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  678 |         cudaMalloc(&sum_array,numberOfVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:680:9: error: ‘set_zero’ was not declared in this scope
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |         ^~~~~~~~
+proj_types.hpp:680:19: error: expected primary-expression before ‘<’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                   ^
+proj_types.hpp:680:27: error: expected primary-expression before ‘>’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                           ^
+proj_types.hpp:681:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  681 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:704:13: error: ‘addMatrix’ was not declared in this scope
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |             ^~~~~~~~~
+proj_types.hpp:704:24: error: expected primary-expression before ‘<’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                        ^
+proj_types.hpp:704:32: error: expected primary-expression before ‘>’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                                ^
+proj_types.hpp:707:25: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                         ^~~~~~
+proj_types.hpp:707:45: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                                             ^~~~~~
+proj_types.hpp:728:18: error: redeclaration of ‘int* ptr’
+  728 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:733:18: error: redeclaration of ‘int* ptr’
+  733 |             int* ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::findGarageOrBunk(int, int, std::set<int>&)’:
+proj_types.hpp:745:72: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                        ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:745:9: error: ‘cudaMemcpy’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+proj_types.hpp: In member function ‘int select_comparator::operator()(const Schema&, const Schema&)’:
+proj_types.hpp:251:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:251:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  251 |                                             return (a11 < a22)?-1:1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp:253:53: error: ‘a11’ was not declared in this scope; did you mean ‘a1’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                     ^~~
+      |                                                     a1
+proj_types.hpp:253:59: error: ‘a22’ was not declared in this scope; did you mean ‘a2’?
+  253 |                                             return (a11 < a22)?1:-1;
+      |                                                           ^~~
+      |                                                           a2
+proj_types.hpp: At global scope:
+proj_types.hpp:369:5: error: ‘Limits’ does not name a type
+  369 |     Limits l;
+      |     ^~~~~~
+proj_types.hpp:546:10: error: extra qualification ‘Table::’ on member ‘PrintDatabase’ [-fpermissive]
+  546 |     void Table::PrintDatabase()
+      |          ^~~~~
+proj_types.hpp: In member function ‘void Table::WriteRows()’:
+proj_types.hpp:376:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  376 |         cudaMalloc(&device_indices,num_mod_rows*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:381:61: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |                                                             ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:381:13: error: ‘cudaMemcpy’ was not declared in this scope
+  381 |             cudaMemcpy(deviceRowsToBeModified+i,&(s.second),cudaMemcpyHostToDevice);
+      |             ^~~~~~~~~~
+proj_types.hpp:384:9: error: ‘changeRowsKernel’ was not declared in this scope
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |         ^~~~~~~~~~~~~~~~
+proj_types.hpp:384:27: error: expected primary-expression before ‘<’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                           ^
+proj_types.hpp:384:35: error: expected primary-expression before ‘>’ token
+  384 |         changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+      |                                   ^
+proj_types.hpp: In member function ‘void Table::init_bt(int)’:
+proj_types.hpp:390:14: error: ‘ceil’ was not declared in this scope
+  390 |         nb = ceil((1.0*num_threads)/1024);
+      |              ^~~~
+proj_types.hpp: In constructor ‘Table::Table(int, int, int)’:
+proj_types.hpp:399:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  399 |         cudaMalloc(&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp: In member function ‘void Table::state_update(Schema&)’:
+proj_types.hpp:424:29: error: ‘l’ was not declared in this scope
+  424 |         if(s.oil_life_pct < l.min_oil_level)
+      |                             ^
+proj_types.hpp:432:26: error: ‘l’ was not declared in this scope
+  432 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:440:26: error: ‘l’ was not declared in this scope
+  440 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:448:26: error: ‘l’ was not declared in this scope
+  448 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:456:26: error: ‘l’ was not declared in this scope
+  456 |         if(s.tire_p_rl < l.min_pressure)
+      |                          ^
+proj_types.hpp:464:26: error: ‘l’ was not declared in this scope
+  464 |         if(s.batt_volt < l.min_voltage)
+      |                          ^
+proj_types.hpp:472:32: error: ‘l’ was not declared in this scope
+  472 |         if(s.fuel_percentage < l.min_fuel_percentage)
+      |                                ^
+proj_types.hpp:482:45: error: ‘l’ was not declared in this scope
+  482 |             row[7] = std::min(row[7]+1,(int)l.brake_violation_time);
+      |                                             ^
+proj_types.hpp:490:45: error: ‘l’ was not declared in this scope
+  490 |             row[8] = std::min(row[8]+1,(int)l.door_violation_time);
+      |                                             ^
+proj_types.hpp:498:45: error: ‘l’ was not declared in this scope
+  498 |             row[9] = std::min(row[9]+1,(int)l.steer_violation_time);
+      |                                             ^
+proj_types.hpp: In member function ‘std::set<Schema, select_comparator> Table::Select(SelectQuery*)’:
+proj_types.hpp:523:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  523 |         cudaMalloc(&selectedValues, numberOfRows*sizeof(int));//row indices that were selected
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:525:9: error: ‘cudaMemset’ was not declared in this scope
+  525 |         cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.
+      |         ^~~~~~~~~~
+proj_types.hpp:527:9: error: ‘selectKernel’ was not declared in this scope
+  527 |         selectKernel<<<nb, nt>>>(
+      |         ^~~~~~~~~~~~
+proj_types.hpp:527:23: error: expected primary-expression before ‘<’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                       ^
+proj_types.hpp:527:32: error: expected primary-expression before ‘>’ token
+  527 |         selectKernel<<<nb, nt>>>(
+      |                                ^
+proj_types.hpp:534:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  534 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:64: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:535:9: error: ‘cudaMemcpy’ was not declared in this scope
+  535 |         cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+proj_types.hpp:539:72: error: no matching function for call to ‘max(std::set<Schema, select_comparator>::size_type, int&)’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/string:40,
+                 from proj_types.hpp:4:
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note: candidate: ‘template<class _Tp> constexpr const _Tp& std::max(const _Tp&, const _Tp&)’
+  222 |     max(const _Tp& __a, const _Tp& __b)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:222:5: note:   template argument deduction/substitution failed:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/bits/char_traits.h:39,
+                 from /usr/include/c++/9/string:40,
+                 from proj_types.hpp:4:
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr const _Tp& std::max(const _Tp&, const _Tp&, _Compare)’
+  268 |     max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algobase.h:268:5: note:   template argument deduction/substitution failed:
+proj_types.hpp:539:72: note:   deduced conflicting types for parameter ‘const _Tp’ (‘long unsigned int’ and ‘int’)
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6:
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note: candidate: ‘template<class _Tp> constexpr _Tp std::max(std::initializer_list<_Tp>)’
+ 3456 |     max(initializer_list<_Tp> __l)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3456:5: note:   template argument deduction/substitution failed:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+In file included from /usr/include/c++/9/algorithm:62,
+                 from proj_types.hpp:6:
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr _Tp std::max(std::initializer_list<_Tp>, _Compare)’
+ 3462 |     max(initializer_list<_Tp> __l, _Compare __comp)
+      |     ^~~
+/usr/include/c++/9/bits/stl_algo.h:3462:5: note:   template argument deduction/substitution failed:
+proj_types.hpp:539:72: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘long unsigned int’
+  539 |         int ms = std::max(return_values.size(),select_query->limit_term);
+      |                                                                        ^
+proj_types.hpp: At global scope:
+proj_types.hpp:561:26: error: extra qualification ‘GPSSystem::’ on member ‘djikstra_result’ [-fpermissive]
+  561 |     std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDroppedVertices)
+      |                          ^~~~~~~~~
+proj_types.hpp:656:22: error: extra qualification ‘GPSSystem::’ on member ‘PathFinder’ [-fpermissive]
+  656 |     std::vector<int> GPSSystem::PathFinder(int source, int destination,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+proj_types.hpp:741:22: error: extra qualification ‘GPSSystem::’ on member ‘findGarageOrBunk’ [-fpermissive]
+  741 |     std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set<int>& setDroppedVertices){
+      |                      ^~~~~~~~~
+proj_types.hpp: In member function ‘void GPSSystem::init_bt(int)’:
+proj_types.hpp:558:14: error: ‘ceil’ was not declared in this scope
+  558 |         nb = ceil(numThreads/1024.0);
+      |              ^~~~
+proj_types.hpp: In member function ‘std::pair<int*, int*> GPSSystem::djikstra_result(int, std::set<int>&)’:
+proj_types.hpp:577:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  577 |         cudaMalloc(&deviceDroppedVertices, numberOfDroppedVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:578:101: error: ‘cudaMemcpyHostToDevice’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |                                                                                                     ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:578:9: error: ‘cudaMemcpy’ was not declared in this scope
+  578 |         cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
+      |         ^~~~~~~~~~
+proj_types.hpp:584:13: error: ‘DropVerticesKernel’ was not declared in this scope
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |             ^~~~~~~~~~~~~~~~~~
+proj_types.hpp:584:33: error: expected primary-expression before ‘<’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                 ^
+proj_types.hpp:584:42: error: expected primary-expression before ‘>’ token
+  584 |             DropVerticesKernel<<<nb, nt>>>(numberOfVertices,numberOfDroppedVertices,deviceAdjacencyMatrix,deviceDroppedVertices);
+      |                                          ^
+proj_types.hpp:585:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  585 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:617:17: error: ‘FindMinDistance’ was not declared in this scope; did you mean ‘hostMinDistance’?
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                 ^~~~~~~~~~~~~~~
+      |                 hostMinDistance
+proj_types.hpp:617:34: error: expected primary-expression before ‘<’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                  ^
+proj_types.hpp:617:43: error: expected primary-expression before ‘>’ token
+  617 |                 FindMinDistance<<<nb, nt>>>(
+      |                                           ^
+proj_types.hpp:623:17: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  623 |                 cudaDeviceSynchronize();
+      |                 ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:624:17: error: ‘FindArgMin’ was not declared in this scope
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                 ^~~~~~~~~~
+proj_types.hpp:624:29: error: expected primary-expression before ‘<’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                             ^
+proj_types.hpp:624:38: error: expected primary-expression before ‘>’ token
+  624 |                 FindArgMin<<<nb, nt>>>(
+      |                                      ^
+proj_types.hpp:632:17: error: ‘Relax’ was not declared in this scope
+  632 |                 Relax<<<nb, nt>>>(
+      |                 ^~~~~
+proj_types.hpp:632:24: error: expected primary-expression before ‘<’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                        ^
+proj_types.hpp:632:33: error: expected primary-expression before ‘>’ token
+  632 |                 Relax<<<nb, nt>>>(
+      |                                 ^
+proj_types.hpp:644:76: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  644 |         cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+      |                                                                            ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::PathFinder(int, int, std::set<int>&)’:
+proj_types.hpp:660:68: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                    ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:660:5: error: ‘cudaMemcpy’ was not declared in this scope
+  660 |     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |     ^~~~~~~~~~
+proj_types.hpp: In member function ‘void GPSSystem::convoyNodeFinder(std::map<int, int>&)’:
+proj_types.hpp:678:9: error: ‘cudaMalloc’ was not declared in this scope; did you mean ‘calloc’?
+  678 |         cudaMalloc(&sum_array,numberOfVertices*sizeof(int));
+      |         ^~~~~~~~~~
+      |         calloc
+proj_types.hpp:680:9: error: ‘set_zero’ was not declared in this scope
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |         ^~~~~~~~
+proj_types.hpp:680:19: error: expected primary-expression before ‘<’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                   ^
+proj_types.hpp:680:27: error: expected primary-expression before ‘>’ token
+  680 |         set_zero<<<nb,nt>>>(sum_array);
+      |                           ^
+proj_types.hpp:681:9: error: ‘cudaDeviceSynchronize’ was not declared in this scope
+  681 |         cudaDeviceSynchronize();
+      |         ^~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:704:13: error: ‘addMatrix’ was not declared in this scope
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |             ^~~~~~~~~
+proj_types.hpp:704:24: error: expected primary-expression before ‘<’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                        ^
+proj_types.hpp:704:32: error: expected primary-expression before ‘>’ token
+  704 |             addMatrix<<<nb,nt>>>(sum_array,p.second);
+      |                                ^
+proj_types.hpp:707:25: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                         ^~~~~~
+proj_types.hpp:707:45: error: ‘thrust’ has not been declared
+  707 |         int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+      |                                             ^~~~~~
+proj_types.hpp:728:18: error: redeclaration of ‘int* ptr’
+  728 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:733:18: error: redeclaration of ‘int* ptr’
+  733 |             int* ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp:723:18: note: ‘int* ptr’ previously declared here
+  723 |             int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+      |                  ^~~
+proj_types.hpp: In member function ‘std::vector<int> GPSSystem::findGarageOrBunk(int, int, std::set<int>&)’:
+proj_types.hpp:745:72: error: ‘cudaMemcpyDeviceToHost’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |                                                                        ^~~~~~~~~~~~~~~~~~~~~~
+proj_types.hpp:745:9: error: ‘cudaMemcpy’ was not declared in this scope
+  745 |         cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+      |         ^~~~~~~~~~
+make: *** [Makefile:4: all] Error 1

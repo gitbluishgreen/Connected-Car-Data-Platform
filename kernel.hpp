@@ -8,7 +8,7 @@ __global__ void set_zero(int* a)
 {
     a[blockIdx.x*blockDim.x + threadIdx.x] = 0;
 }
-__global__ void changeRowsKernel(int numberOfRowsToBeModified, int* indices_to_overwrite, Schema* deviceRowsToBeModified, Schema* StateDatabase
+__global__ void changeRowsKernel(int numberOfRowsToBeModified, int* indices_to_overwrite, Schema* deviceRowsToBeModified, Schema* Database
 )
 {
     int id = blockIdx.x*blockDim.x+threadIdx.x;

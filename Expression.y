@@ -33,7 +33,7 @@
 %start goal;
 %type <SelectObject> Select_Query goal
 %type <value> LimitExp 
-%type <distinct> DistinctQualifier  OrderCriteria
+%type <distinct> OrderCriteria
 %type <expression_list> MultiAggCol AggCol
 %type <name_list> Columns MultiCol
 %type <order_list> OrderExp ExpList
@@ -46,42 +46,30 @@ goal: Select_Query
 	$$ = $1;
 	update_query($$);
 };
-Select_Query: Select DistinctQualifier Columns WhereCondition GroupExp OrderExp LimitExp
+Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery();
-	$$->distinct_query = false;
+	$$ = new SelectQuery;
 	for(auto it: *$3)
 	{
 		if(!find_column(it))
 			YYABORT;
 	}
-	$$->select_columns = *$3;
-	$$->distinct_query = $2;
-	$$->select_expression = $4;
-	$$->group_term = $5;
-	$$->order_term = *$6;
-	$$->limit_term = $7;
+	$$->select_columns = *$2;
+	$$->select_expression = $3;
+	$$->group_term = $4;
+	$$->order_term = *$5;
+	$$->limit_term = $6;
 	//std::cout<<"Reached Select_Query\n";
 }
 | Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery();
-	$$->distinct_query = false;
+	$$ = new SelectQuery;
 	$$->select_expression =  $3;
-	$$->group_expression = $4;
+	$$->group_term = $4;
 	$$->order_term = *$5;
 	$$->limit_term = $6;  
 };
 
-DistinctQualifier: 
-Distinct
-{
-	$$ = true;
-}
-| /*empty*/
-{
-	$$ = false;
-};
 Columns: Identifier MultiCol
 {
 	$$ = $2;
@@ -137,7 +125,7 @@ Limit Value
 |
 /*empty*/
 {
-	$$ = NULL;
+	$$ = -1;
 };
 
 AggregateFunction: Maximum
@@ -172,7 +160,7 @@ AggCol:
 AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
 	$$ = $5;
-	$$->push_back(std::make_pair($1,$3));
+	$$->push_back(std::make_pair(*$1,$3));
 };
 MultiAggCol: Comma AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
@@ -220,24 +208,26 @@ Exp OrderCriteria
 
 Exp: Exp Or Exp1
 {
-	$$ = new ExpressionNode("or");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "or";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	$$->type_of_expr =  1;
 }
 | Exp And Exp1
 {
-	$$ = new ExpressionNode("and");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "and";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	$$->type_of_expr =  1;
 }
 | Not Exp1
 {
-	$$ = new ExpressionNode();
+	$$ = new ExpressionNode;
 	$$->exp_operator = "not";
 	$$->left_hand_term = $2;
-	if($$->type != 1)
+	if($$->type_of_expr != 1)
 		YYABORT;
 	$$->type_of_expr =  1;
 }
@@ -248,7 +238,8 @@ Exp: Exp Or Exp1
 
 Exp1: Exp1 Greater Exp2
 {
-	$$ = new ExpressionNode("greater");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "greater";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -257,7 +248,8 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 Lesser Exp2
 {
-	$$ = new ExpressionNode("greater");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "lesser";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -266,7 +258,8 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 GreaterEqual Exp2
 {
-	$$ = new ExpressionNode("GreaterEqual");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "greaterequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -275,7 +268,8 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 LesserEqual Exp2
 {
-	$$ = new ExpressionNode("LesserEqual");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "lesserequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -284,7 +278,8 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 DoubleEqual Exp2
 {
-	$$ = new ExpressionNode("Equal");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "doubleequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -293,7 +288,8 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 NotEqual Exp2
 {
-	$$ = new ExpressionNode("NotEqual");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "notequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -307,21 +303,23 @@ Exp1: Exp1 Greater Exp2
 
 Exp2: Exp2 Plus Exp3
 {
-	$$ = new ExpressionNode("Plus");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "plus";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
-	$$->type_of_expr =  max($1->type,$3->type);
+	$$->type_of_expr =  std::max($1->type_of_expr,$3->type_of_expr);
 }
 | Exp2 Minus Exp3
 {
-	$$ = new ExpressionNode("NotEqual");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "minus";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
-	$$->type_of_expr =  max($1->type,$3->type);
+	$$->type_of_expr =  std::max($1->type_of_expr,$3->type_of_expr);
 }
 | Exp3
 {
@@ -329,7 +327,8 @@ Exp2: Exp2 Plus Exp3
 };
 Exp3: Exp3 Mult Term
 {
-	$$ = new ExpressionNode("Mult");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "mult";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -338,7 +337,8 @@ Exp3: Exp3 Mult Term
 }
 | Exp3 Div Term
 {
-	$$ = new ExpressionNode("Div");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "div";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -347,10 +347,11 @@ Exp3: Exp3 Mult Term
 }
 | Exp3 Modulo Term
 {
-	$$ = new ExpressionNode("NotEqual");
+	$$ = new ExpressionNode;
+	$$->exp_operator = "modulo";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
-	if($1->type !=  2 || $3->type != 2)
+	if($1->type_of_expr !=  2 || $3->type_of_expr != 2)
 		YYABORT;
 	$$->type_of_expr =  2;
 }
@@ -362,13 +363,13 @@ Term
 
 Term: Identifier
 {
-	$$ = new ExpressionNode();
-	$$->column_name = *(yylval.identfier);
+	$$ = new ExpressionNode;
+	$$->column_name = *(yylval.identifier);
 	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
 {
-	$$ = new ExpressionNode();
+	$$ = new ExpressionNode;
 	$$->value = yylval.value;
 	$$->type_of_expr =  (floor(yylval.value) == yylval.value)?2:3;
 }
@@ -402,6 +403,7 @@ bool find_column(std::string column)
 {
 	return (column_map.find(column) != column_map.end());
 }
+
 SelectQuery* process_query(std::string query)
 {
 	if(column_map.size() == 0)
