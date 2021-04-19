@@ -50,15 +50,6 @@ space "\t"|"\n"|"\r"|"\f"|" "
 {identifier} {yylval.identifier = new char[1+strlen(yytext)]; strcpy(yylval.identifier,yytext); return Identifier;}
 %%
 
-void show(SelectQuery* s)
-{
-	for(auto it: s->select_columns)
-		std::cout<<it<<", ";
-	std::cout<<s->select_expression<<' ';
-	for(auto it: s->order_term)
-		std::cout<<it.first<<" "<<it.second<<", ";
-    return;
-}
 int yywrap(void) {
     return 1;
 }

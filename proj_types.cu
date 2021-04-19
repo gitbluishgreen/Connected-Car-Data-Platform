@@ -316,6 +316,7 @@ void Table::WriteRows()
         cudaMemcpy(device_indices+i,&(s.first),sizeof(int),cudaMemcpyHostToDevice);
     }
     changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
+    cudaDeviceSynchronize();
 }
 
 void Table::init_bt(int num_threads)
@@ -452,6 +453,7 @@ void Table::state_update(Schema& s)
 std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
 {
     //acquire a lock before writing? Mostly needed, can be a lock using mutex across both threads. 
+    mtx.lock();
     Schema* selectedValues;
     int* endIndexSelectedValues;
     Schema* retArr;
@@ -471,6 +473,8 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
     retArr = new Schema[size];
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
+    cudaFree(selectedValues);
+    mtx.unlock();
     std::set<Schema,select_comparator> return_values(retArr, retArr+size,select_comparator(select_query));
     int ms = std::max((int)(return_values.size()),select_query->limit_term);
     while(return_values.size() > ms)

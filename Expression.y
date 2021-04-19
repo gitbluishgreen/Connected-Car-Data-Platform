@@ -49,7 +49,7 @@ goal: Select_Query
 };
 Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery;
+	cudaMallocHost((void**)&$$,sizeof(SelectQuery));//pinned memory
 	for(auto it: *$2)
 	{
 		if(!find_column(it))
@@ -64,7 +64,7 @@ Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 }
 | Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
-	$$ = new SelectQuery;
+	cudaMallocHost((void**)&$$,sizeof(SelectQuery));
 	$$->select_expression =  $3;
 	$$->group_term = $4;
 	$$->order_term = *$5;
@@ -209,7 +209,7 @@ Exp OrderCriteria
 
 Exp: Exp Or Exp1
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "or";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -217,7 +217,7 @@ Exp: Exp Or Exp1
 }
 | Exp And Exp1
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "and";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -225,7 +225,7 @@ Exp: Exp Or Exp1
 }
 | Not Exp1
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "not";
 	$$->left_hand_term = $2;
 	if($$->type_of_expr != 1)
@@ -239,7 +239,7 @@ Exp: Exp Or Exp1
 
 Exp1: Exp1 Greater Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "greater";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -249,7 +249,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 Lesser Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "lesser";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -259,7 +259,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 GreaterEqual Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "greaterequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -269,7 +269,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 LesserEqual Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "lesserequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -279,7 +279,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 DoubleEqual Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "doubleequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -289,7 +289,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp1 NotEqual Exp2
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "notequal";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -304,7 +304,7 @@ Exp1: Exp1 Greater Exp2
 
 Exp2: Exp2 Plus Exp3
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "plus";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -314,7 +314,7 @@ Exp2: Exp2 Plus Exp3
 }
 | Exp2 Minus Exp3
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "minus";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -328,7 +328,7 @@ Exp2: Exp2 Plus Exp3
 };
 Exp3: Exp3 Mult Term
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "mult";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -338,7 +338,7 @@ Exp3: Exp3 Mult Term
 }
 | Exp3 Div Term
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "div";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -348,7 +348,7 @@ Exp3: Exp3 Mult Term
 }
 | Exp3 Modulo Term
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->exp_operator = "modulo";
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
@@ -364,13 +364,13 @@ Term
 
 Term: Identifier
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->column_name = yylval.identifier;
 	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
 {
-	$$ = new ExpressionNode;
+	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	$$->value = yylval.value;
 	$$->type_of_expr =  (floor(yylval.value) == yylval.value)?2:3;
 }

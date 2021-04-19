@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <fstream>
 #include <cuda.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -18,6 +19,7 @@
 #include <thrust/extrema.h>
 #include "Expression.tab.cuh" //to parse any input queries.
 #include "proj_types.cuh"
+SelectQuery* process_query(std::string);
 void initialize(int,int,int*,std::map<int,int>*);
 Table* t;
 GPSSystem* gps_object;
@@ -110,7 +112,25 @@ void listener(int* fd)
         t->update_worklist(s);
     }
 }
-int main()
+void query_resolver()
+{
+    std::string s;
+    while(true)
+    {
+        std::cout<<"Enter your query\n";
+        std::getline(std::cin,s);
+        if(s == "KILL")
+            return;
+        SelectQuery* sq = process_query(s);
+        std::cout<<sq<<'\n';
+        if(sq != NULL){
+        std::set<Schema,select_comparator> s = t->select(sq);
+        std::cout<<"Query resolved with "<<s.size()<<'\n';
+        }
+    }
+}       
+
+int main(int argc, char* argv[])
 {
     sa.sa_sigaction = &message_handler;
     sa.sa_flags |= SA_SIGINFO;
@@ -119,7 +139,9 @@ int main()
         std::cout<<"Error while initializing the signal handler!\n";
     }
     int max_wl_size;
-    std::cin >>numberOfRows>>max_wl_size>>numberOfCars>>numberOfVertices;
+    std::ifstream input_file;
+    input_file.open(argv[1],std::ifstream::in);
+    input_file >>numberOfRows>>max_wl_size>>numberOfCars>>numberOfVertices;
     t = new Table(numberOfRows,numberOfCars,max_wl_size);
     int f[2];
     pipe(f);
@@ -128,7 +150,7 @@ int main()
     int* hostAdjacencyMatrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
     for(int i = 0; i < numberOfVertices; i ++){
         for(int j = 0; j < numberOfVertices; j ++){
-            std::cin >> hostAdjacencyMatrix[i*numberOfVertices+j];
+            input_file >> hostAdjacencyMatrix[i*numberOfVertices+j];
             if(hostAdjacencyMatrix[i*numberOfVertices+j] < 0) hostAdjacencyMatrix[i*numberOfVertices+j] = INT_MAX;
         }
     }
@@ -137,12 +159,14 @@ int main()
     ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
     int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
     for(int i = 0;i < numberOfVertices;i++)
-        std::cin>>type_array[i];//1 for normal, 2 for fuel station, 3 for garage
+        input_file >> type_array[i];//1 for normal, 2 for fuel station, 3 for garage
     gps_object = new GPSSystem(numberOfVertices, hostAdjacencyMatrix);
+    input_file.close();
     std::thread t1(initialize,numberOfCars,numberOfVertices,f,car_map);//creates and runs the cars.
     std::thread t2(listener,f);//listens for server messages.
+    std::thread t3(query_resolver);
     t1.join();
-    std::cout<<"I've done my duty of creating cars. Now I'll stop.\n";
     t2.join();
+    t3.join();
     return 0;//end of program
 }

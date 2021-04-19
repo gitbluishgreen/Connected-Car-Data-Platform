@@ -1,6 +1,7 @@
 #ifndef PROJ_TYPES_H
 #define PROJ_TYPES_H
 #include <string>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <map>
