@@ -6,7 +6,7 @@
 	#include <vector>
 	#include <map>
 	#include <cmath>
-	#include "proj_types.hpp"
+	#include "proj_types.h"
 	void yyerror(const char*);
 	int yyparse(void);
 	int yylex(void);

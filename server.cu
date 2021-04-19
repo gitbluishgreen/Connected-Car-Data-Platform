@@ -3,7 +3,6 @@
 #include <map>
 #include <cuda.h>
 #include <limits.h>
-#include <schema.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
@@ -13,7 +12,7 @@
 #include <fcntl.h>
 #include <car.cu>
 #include <thrust/device_vector.h>
-#include "proj_types.hpp"
+#include "proj_types.h"
 Limits l();
 Table* t;
 GPSsystem* gps_object;

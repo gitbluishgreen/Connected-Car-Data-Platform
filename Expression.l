@@ -3,7 +3,7 @@
 #include <string>
 #include <stdlib.h>
 #include <map>
-#include "proj_types.hpp"
+#include "proj_types.h"
 #include "Expression.tab.hpp"
 SelectQuery* process_query(std::string);
 //stores the value of the tokens.
