@@ -6,6 +6,7 @@
 #include <sys/shm.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <vector>
 #include <time.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -17,7 +18,8 @@ int write_fd;
 int pid;
 int count = 0;
 //path[i] -> path[i+1]
-int* path;//the path the car has to follow if a convoy request is being made.
+std::vector<int> path;//the path the car has to follow if a convoy request is being made.
+int* adjacency_matrix;
 double oil_level;
 double pressure_rr;
 double pressure_fr;
@@ -30,7 +32,6 @@ bool brake = false;
 bool door_lock = true;
 int origin_index;
 int destination_index;
-int path_size;
 int increment_index;
 Limits* limit_object;
 static struct sigaction sa1;
@@ -69,9 +70,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
             c[4] = '4';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sz*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
-            if(path != NULL)
-                delete path;
-            path = new int[sz];
+            path.resize(sz);
             for(int i =0;i < sz;i++)
                 path[i] = ptr[i];
             origin_index = 0;
@@ -88,9 +87,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
             c[4] = '4';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sz*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
-            if(path != NULL)
-                delete path;
-            path = new int[sz];
+            path.resize(sz);
             for(int i =0;i < sz;i++)
                 path[i] = ptr[i];
             origin_index = 0;
@@ -116,7 +113,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
     }
     else if(*ptr == 2)
     {
-        //convoy request. This message informs the car of the coordinate it has to rerout to and what path to follow
+        //convoy/garage/bunk request. This message informs the car of the coordinate it has to rerout to and what path to follow
         sprintf(c,"shm_3_%d",pid);
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);//read the array size first.
@@ -124,9 +121,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         sprintf(c,"shm_4_%d",pid);
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4*a_sz,PROT_READ,MAP_SHARED,fd,0);
-        if(path != NULL)
-            delete path;//free the old memory before allocating new one.
-        path = new int[a_sz];
+        path.resize(a_sz);
         for(int i = 0;i < a_sz;i++)
             path[i] = ptr[i];
         origin_index = 0;
@@ -139,12 +134,12 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
     //     Add this feature if necessary.
     // }
 }
-void run_state(int numberOfCars)
+void run_state(int numberOfCars,int numberOfVertices)
 {
     double prev_speed = 0.0;//starting from scratch
     int prev_gear = 0;
     int fd = shm_open("adjacency_matrix",O_RDONLY,0666);
-    int* ptr = (int*)mmap(0,numberOfCars*numberOfCars*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
+    adjacency_matrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     pid = getpid();
     oil_level = limit_object->min_oil_level;
     pressure_fl = limit_object->min_pressure;
@@ -159,6 +154,9 @@ void run_state(int numberOfCars)
     Schema obj(10);//object creation.
     obj.vehicle_id =  pid;
     double new_speed = 0.0;
+    path.resize(numberOfVertices);
+    for(int i = 0;i < numberOfVertices;i++)
+        path[i] = i;
     while(true)
     {
         obj.database_index = count;
@@ -211,23 +209,16 @@ void run_state(int numberOfCars)
             prev_speed = new_speed;   
         }
         distance_covered += limit_object->interval_between_messages*(prev_speed + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages);
-        char c[20];
-        sprintf(c,"shm_3_%d",pid);
-        int fd = shm_open(c,O_RDONLY,0666);
-        int* sz = (int*)mmap(0,4,PROT_READ,MAP_SHARED,fd,0);
-        sprintf(c,"shm_4_%d",pid);
-        fd = shm_open(c,O_RDONLY,0666);
-        int* arr = (int*)mmap(0,4 * (*sz),PROT_READ,MAP_SHARED,fd,0);
-        if(distance_covered >= ptr[numberOfCars*arr[origin_index]+arr[destination_index]])
+        if(distance_covered >= adjacency_matrix[numberOfCars*path[origin_index]+path[destination_index]])
         {
             origin_index = origin_index + increment_index;
             destination_index = destination_index + increment_index;
         }
-        if(destination_index == *sz)
+        if(destination_index == path.size())
         {
             increment_index = -1;
-            destination_index = *sz-2;
-            origin_index = *sz-1;
+            destination_index = path.size()-2;
+            origin_index = path.size()-1;
         }
         if(destination_index == -1)
         {
@@ -242,7 +233,7 @@ void run_state(int numberOfCars)
     }
 }
 
-void initialize(int numberOfCars,int* file_descriptor,std::map<int,int> car_map)
+void initialize(int numberOfCars,int numberOfVertices,int* file_descriptor,std::map<int,int>* car_map)
 {
     int i;
     srand(time(NULL));
@@ -250,7 +241,7 @@ void initialize(int numberOfCars,int* file_descriptor,std::map<int,int> car_map)
     limit_object = new Limits();
     for(i=0;i<numberOfCars;i++)
     {
-        int pid = fork();
+        pid = fork();
         if(pid < 0)
         {
             std::cout<<"Error creating Car #"<<i<<'\n';
@@ -264,16 +255,15 @@ void initialize(int numberOfCars,int* file_descriptor,std::map<int,int> car_map)
             {
                 std::cout<<"Error while initializing the signal handler!\n";
             }
-            run_state(numberOfCars);
+            run_state(numberOfCars,numberOfVertices);
             exit(0);
         }
         else
         {
-            car_map[count] = pid;
+            (*car_map)[count] = pid;
             count++;
             //parent process 
         }
     }
-    wait(NULL);//wait for all cars to finish.
-    exit(0);
+    //returns to the join function. Thread 2 still runs, server is still alive.
 }

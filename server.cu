@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
 #include <cuda.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -17,13 +18,13 @@
 #include <thrust/extrema.h>
 #include "Expression.tab.cuh" //to parse any input queries.
 #include "proj_types.cuh"
-void initialize(int,int*,std::map<int,int>);
+void initialize(int,int,int*,std::map<int,int>*);
 Table* t;
 GPSSystem* gps_object;
 int numberOfCars;
 int numberOfVertices;
 int numberOfRows;
-std::map<int,int> car_map;
+std::map<int,int>* car_map;
 static struct sigaction sa;
 void message_handler(int sig, siginfo_t* sig_details,void* context)
 {
@@ -40,7 +41,7 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
         for(int i = 0;i < numberOfCars;i++)
         {
             if(ptr[i])
-                participating_cars.insert(car_map[i]);
+                participating_cars.insert((*car_map)[i]);
         }
         SelectQuery* s;
         cudaMallocHost((void**)&s,sizeof(Schema));
@@ -131,15 +132,17 @@ int main()
             if(hostAdjacencyMatrix[i*numberOfVertices+j] < 0) hostAdjacencyMatrix[i*numberOfVertices+j] = INT_MAX;
         }
     }
+    car_map = new std::map<int,int>();
     fd = shm_open("vertex_type",O_CREAT|O_RDWR,0666);
     ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
     int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
     for(int i = 0;i < numberOfVertices;i++)
         std::cin>>type_array[i];//1 for normal, 2 for fuel station, 3 for garage
     gps_object = new GPSSystem(numberOfVertices, hostAdjacencyMatrix);
-    std::thread t1(initialize,numberOfCars,f,car_map);//creates and runs the cars.
+    std::thread t1(initialize,numberOfCars,numberOfVertices,f,car_map);//creates and runs the cars.
     std::thread t2(listener,f);//listens for server messages.
     t1.join();
+    std::cout<<"I've done my duty of creating cars. Now I'll stop.\n";
     t2.join();
     return 0;//end of program
 }
