@@ -24,7 +24,7 @@ __host__ __device__ ExpressionNode::ExpressionNode(char* op)
     left_hand_term = right_hand_term = NULL;
     exp_operator = op;
 }
-__host__ __device__ bool ExpressionNode::evaluate_int_expr(const Schema& s)
+__host__ __device__ int ExpressionNode::evaluate_int_expr(const Schema& s)
 {
     if(type_of_expr != 2)
         return 0;

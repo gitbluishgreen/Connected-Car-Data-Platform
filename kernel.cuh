@@ -2,7 +2,7 @@
 #define KERNEL_H
 #include <cuda.h>
 #include "proj_types.cuh"
-__global__ void set_zero(int* );
+__global__ void set_zero(int*);
 __global__ void addMatrix(int* a,int* b);
 __global__ void DropVerticesKernel(int,int,int*,int*);
 __global__ void FindMinDistance(int ,int*,int*,int*);
