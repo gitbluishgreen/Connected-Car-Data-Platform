@@ -50,10 +50,17 @@ goal: Select_Query
 Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 {
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));//pinned memory
-	for(auto it: *$2)
+	if((*$2).size() == 1)
 	{
-		if(!find_column(it))
+		if(strcmp((*$2)[0],"*") != 0 && !find_column((*$2)[0]))
 			YYABORT;
+	} 
+	else{
+		for(auto it: *$2)
+		{
+			if(!find_column(it))
+				YYABORT;
+		}
 	}
 	$$->select_columns = *$2;
 	$$->select_expression = $3;
