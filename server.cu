@@ -10,8 +10,9 @@
 #include <mutex> //to forbid concurrent reads and writes.
 #include <thread>//2 threads: one listener and one moderator.
 #include <fcntl.h>
-#include <car.cu>
+#include "car.cu"//code for car to be added here.
 #include <thrust/device_vector.h>
+#include "Expression.tab.hpp" //to parse any input queries.
 #include "proj_types.h"
 Limits l();
 Table* t;

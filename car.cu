@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <iostream>
-#include "proj_types.hpp"
+#include "proj_types.h"
 #include <sys/types.h>
 #include <sys/shm.h>
 #include <fcntl.h>

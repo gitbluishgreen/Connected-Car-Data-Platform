@@ -59,20 +59,6 @@ void show(SelectQuery* s)
 		std::cout<<it.first<<" "<<it.second<<", ";
     return;
 }
-int main(void)
-{
-	std::string s;
-	std::cin>>s;
-	SelectQuery* s1 = process_query(s);
-	if(s1 != NULL)
-	{
-		std::cout<<"Successful!\n";
-		show(s1);
-	}	
-	else
-		std::cout<<"Failed!\n";
-	return 0;
-}
 int yywrap(void) {
     return 1;
 }
