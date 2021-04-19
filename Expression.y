@@ -1,33 +1,34 @@
 %{
 	#include <iostream>
 	#include <string>
+	#include <string.h>
 	#include <stdlib.h>
 	#include <utility>
 	#include <vector>
 	#include <map>
 	#include <cmath>
-	#include "proj_types.h"
+	#include "proj_types.cuh"
 	void yyerror(const char*);
 	int yyparse(void);
 	int yylex(void);
 	int yy_scan_string(const char*);
 	int yylex_destroy(void);
 	void update_query(SelectQuery*);
-	int get_type(std::string);
-	void update_columns(std::vector<std::string>*);
-	bool find_column(std::string);
+	int get_type(char*);
+	void update_columns(std::vector<char*>*);
+	bool find_column(char*);
 	std::map<std::string,int> column_map; 
 	SelectQuery* select_query;
 %}
 %union
 {
 	double value;
-	std::string* identifier;
+	char* identifier;
 	class SelectQuery* SelectObject;
 	bool distinct;
 	class ExpressionNode* expression;
-	std::vector<std::string>* name_list;
-	std::vector<std::pair<std::string,ExpressionNode*>>* expression_list;
+	std::vector<char*>* name_list;
+	std::vector<std::pair<char*,ExpressionNode*>>* expression_list;
 	std::vector<std::pair<ExpressionNode*,bool>>* order_list;
 }
 %start goal;
@@ -49,7 +50,7 @@ goal: Select_Query
 Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 {
 	$$ = new SelectQuery;
-	for(auto it: *$3)
+	for(auto it: *$2)
 	{
 		if(!find_column(it))
 			YYABORT;
@@ -73,23 +74,23 @@ Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
 Columns: Identifier MultiCol
 {
 	$$ = $2;
-	$$->push_back(*(yylval.identifier));
+	$$->push_back(yylval.identifier);
 }
 |
 Mult
 {
-	$$ = new std::vector<std::string>();
+	$$ = new std::vector<char*>();
 	update_columns($$);
 };
 MultiCol: MultiCol Comma Identifier
 {
 	$$ = $1;
-	$$->push_back(*(yylval.identifier));
+	$$->push_back(yylval.identifier);
 }
 | 
 /*empty*/
 {
-	$$ = new std::vector<std::string>();
+	$$ = new std::vector<char*>();
 };
 OrderCriteria: Ascending
 {
@@ -130,47 +131,47 @@ Limit Value
 
 AggregateFunction: Maximum
 {
-	$$ = new std::string("max");
+	$$ = "max";
 }
 | Minimum
 {
-	$$ = new std::string("min");
+	$$ = "min";
 }
 | Average
 {
-	$$ = new std::string("avg");
+	$$ = "avg";
 }
 | Variance
 {
-	$$ = new std::string("var");
+	$$ = "var";
 }
 | StandardDeviation
 {
-	$$ = new std::string("std");
+	$$ = "std";
 }
 | Count
 {
-	$$ = new std::string("count");
+	$$ = "count";
 }
 | Sum
 {
-	$$ = new std::string("sum");
+	$$ = "sum";
 };
 AggCol: 
 AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
 	$$ = $5;
-	$$->push_back(std::make_pair(*$1,$3));
+	$$->push_back(std::make_pair($1,$3));
 };
 MultiAggCol: Comma AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
 	$$ = $6;
-	$$->push_back(std::make_pair(*$2,$4));
+	$$->push_back(std::make_pair($2,$4));
 }
 |
 /*empty*/
 {
-	$$ = new std::vector<std::pair<std::string,ExpressionNode*>>;
+	$$ = new std::vector<std::pair<char*,ExpressionNode*>>;
 };
 GroupExp: 
 Group By Exp
@@ -364,7 +365,7 @@ Term
 Term: Identifier
 {
 	$$ = new ExpressionNode;
-	$$->column_name = *(yylval.identifier);
+	$$->column_name = yylval.identifier;
 	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
@@ -388,20 +389,25 @@ void update_query(SelectQuery* sq)
 {
 	select_query = sq;
 }
-void update_columns(std::vector<std::string>* v)
+void update_columns(std::vector<char*>* v)
 {
 	for(auto it: column_map)
 	{
-		v->push_back(it.first);
+		const char* t = it.first.c_str();
+		char* s = new char[strlen(t)+1];
+		strcpy(s,t);
+		v->push_back(s);
 	}
 }
-int get_type(std::string column)
+int get_type(char* column)
 {
-	return column_map[column];
+	std::string s(column);
+	return column_map[s];
 }
-bool find_column(std::string column)
+bool find_column(char* column)
 {
-	return (column_map.find(column) != column_map.end());
+	std::string s(column);
+	return (column_map.find(s) != column_map.end());
 }
 
 SelectQuery* process_query(std::string query)

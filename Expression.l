@@ -3,8 +3,8 @@
 #include <string>
 #include <stdlib.h>
 #include <map>
-#include "proj_types.h"
-#include "Expression.tab.hpp"
+#include "proj_types.cuh"
+#include "Expression.tab.cuh"
 SelectQuery* process_query(std::string);
 //stores the value of the tokens.
 %}
@@ -47,7 +47,7 @@ space "\t"|"\n"|"\r"|"\f"|" "
 "VARIANCE" {return Variance;}
 "STDDEV" {return StandardDeviation;}
 "COUNT" {return Count;}
-{identifier} {yylval.identifier = new std::string(yytext); return Identifier;}
+{identifier} {yylval.identifier = new char[1+strlen(yytext)]; strcpy(yylval.identifier,yytext); return Identifier;}
 %%
 
 void show(SelectQuery* s)
