@@ -34,48 +34,53 @@
 %start goal;
 %type <SelectObject> Select_Query goal
 %type <value> LimitExp 
-%type <distinct> OrderCriteria
+%type <distinct> OrderCriteria DistinctQualifier
 %type <expression_list> MultiAggCol AggCol
 %type <name_list> Columns MultiCol
 %type <order_list> OrderExp ExpList
 %type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp 
 %type <identifier> AggregateFunction
-%token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Where Order Group By Limit Distinct Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
+%token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Distinct Where Order Group By Limit Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
 %%
 goal: Select_Query
 {
 	$$ = $1;
 	update_query($$);
 };
-Select_Query: Select Columns WhereCondition GroupExp OrderExp LimitExp
+Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 {
-	cudaMallocHost((void**)&$$,sizeof(SelectQuery));//pinned memory
-	if((*$2).size() == 1)
+
+	for(auto it: *$3)
 	{
-		if(strcmp((*$2)[0],"*") != 0 && !find_column((*$2)[0]))
+		if(!find_column(it))
 			YYABORT;
-	} 
-	else{
-		for(auto it: *$2)
-		{
-			if(!find_column(it))
-				YYABORT;
-		}
 	}
-	$$->select_columns = *$2;
-	$$->select_expression = $3;
-	$$->group_term = $4;
-	$$->order_term = *$5;
+	cudaMallocHost((void**)&$$,sizeof(SelectQuery));//pinned memory
+	$$->distinct = $2;
+	$$->select_columns = $3;
+	$$->select_expression = $4;
+	$$->order_term = $5;
 	$$->limit_term = $6;
 	//std::cout<<"Reached Select_Query\n";
 }
 | Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));
+	$$->aggregate_columns = $2;
 	$$->select_expression =  $3;
 	$$->group_term = $4;
-	$$->order_term = *$5;
+	$$->order_term = $5;
 	$$->limit_term = $6;  
+};
+
+DistinctQualifier: Distinct
+{
+	$$ = true;
+}
+| 
+/*empty*/
+{
+	$$ = false;
 };
 
 Columns: Identifier MultiCol
@@ -138,31 +143,52 @@ Limit Value
 
 AggregateFunction: Maximum
 {
-	$$ = "max";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 'm';
+	$$[1] = 'a';
+	$$[2] = 'x';
 }
 | Minimum
 {
-	$$ = "min";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 'm';
+	$$[1] = 'i';
+	$$[2] = 'n';
 }
 | Average
 {
-	$$ = "avg";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 'a';
+	$$[1] = 'v';
+	$$[2] = 'g';
 }
 | Variance
 {
-	$$ = "var";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 'v';
+	$$[1] = 'a';
+	$$[2] = 'r';
 }
 | StandardDeviation
 {
-	$$ = "std";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 's';
+	$$[1] = 't';
+	$$[2] = 'd';
 }
 | Count
 {
-	$$ = "count";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 'c';
+	$$[1] = 'n';
+	$$[2] = 't';
 }
 | Sum
 {
-	$$ = "sum";
+	cudaMallocHost((void**)&$$,4*sizeof(char));
+	$$[0] = 's';
+	$$[1] = 'u';
+	$$[2] = 'm';
 };
 AggCol: 
 AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
@@ -178,7 +204,7 @@ MultiAggCol: Comma AggregateFunction OpeningBracket Exp ClosingBracket MultiAggC
 |
 /*empty*/
 {
-	$$ = new std::vector<std::pair<char*,ExpressionNode*>>;
+	$$ = new std::vector<std::pair<char*,ExpressionNode*>>;//do we need to replace by thrust?
 };
 GroupExp: 
 Group By Exp
@@ -210,14 +236,16 @@ Exp OrderCriteria ExpList
 | 
 Exp OrderCriteria 
 {
-	$$ = new std::vector<std::pair<ExpressionNode*,bool>>();
+	$$ = new std::vector<std::pair<ExpressionNode*,bool>>();//replace by thrust?
 	$$->push_back(std::make_pair($1,$2));
 }; 
 
 Exp: Exp Or Exp1
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "or";
+	cudaMallocHost((void**)(&($$->exp_operator)),3 * sizeof(char));
+	$$->exp_operator[0] = 'o';
+	$$->exp_operator[1] = 'r';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	$$->type_of_expr =  1;
@@ -225,7 +253,10 @@ Exp: Exp Or Exp1
 | Exp And Exp1
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "and";
+	cudaMallocHost((void**)(&($$->exp_operator)),4 * sizeof(char));
+	$$->exp_operator[0] = 'a';
+	$$->exp_operator[1] = 'n';
+	$$->exp_operator[2] = 'd';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	$$->type_of_expr =  1;
@@ -233,7 +264,10 @@ Exp: Exp Or Exp1
 | Not Exp1
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "not";
+	cudaMallocHost((void**)(&($$->exp_operator)),4 * sizeof(char));
+	$$->exp_operator[0] = 'n';
+	$$->exp_operator[1] = 'o';
+	$$->exp_operator[2] = 't';
 	$$->left_hand_term = $2;
 	if($$->type_of_expr != 1)
 		YYABORT;
@@ -247,7 +281,14 @@ Exp: Exp Or Exp1
 Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "greater";
+	cudaMallocHost((void**)(&($$->exp_operator)),8 * sizeof(char));
+	$$->exp_operator[0] = 'g';
+	$$->exp_operator[1] = 'r';
+	$$->exp_operator[2] = 'e';
+	$$->exp_operator[3] = 'a';
+	$$->exp_operator[4] = 't';
+	$$->exp_operator[5] = 'e';
+	$$->exp_operator[6] = 'r';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -257,7 +298,13 @@ Exp1: Exp1 Greater Exp2
 | Exp1 Lesser Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "lesser";
+	cudaMallocHost((void**)(&($$->exp_operator)),7 * sizeof(char));
+	$$->exp_operator[0] = 'l';
+	$$->exp_operator[1] = 'e';
+	$$->exp_operator[2] = 's';
+	$$->exp_operator[3] = 's';
+	$$->exp_operator[4] = 'e';
+	$$->exp_operator[5] = 'r';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -267,9 +314,19 @@ Exp1: Exp1 Greater Exp2
 | Exp1 GreaterEqual Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "greaterequal";
-	$$->left_hand_term = $1;
-	$$->right_hand_term = $3;
+	cudaMallocHost((void**)(&($$->exp_operator)),13 * sizeof(char));
+	$$->exp_operator[0] = 'g';
+	$$->exp_operator[1] = 'r';
+	$$->exp_operator[2] = 'e';
+	$$->exp_operator[3] = 'a';
+	$$->exp_operator[4] = 't';
+	$$->exp_operator[5] = 'e';
+	$$->exp_operator[6] = 'r';
+	$$->exp_operator[7] = 'e';
+	$$->exp_operator[8] = 'q';
+	$$->exp_operator[9] = 'u';
+	$$->exp_operator[10] = 'a';
+	$$->exp_operator[11] = 'l';
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
 	$$->type_of_expr =  1;
@@ -277,7 +334,18 @@ Exp1: Exp1 Greater Exp2
 | Exp1 LesserEqual Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "lesserequal";
+	cudaMallocHost((void**)(&($$->exp_operator)),12 * sizeof(char));
+	$$->exp_operator[0] = 'l';
+	$$->exp_operator[1] = 'e';
+	$$->exp_operator[2] = 's';
+	$$->exp_operator[3] = 's';
+	$$->exp_operator[4] = 'e';
+	$$->exp_operator[5] = 'r';
+	$$->exp_operator[6] = 'e';
+	$$->exp_operator[7] = 'q';
+	$$->exp_operator[8] = 'u';
+	$$->exp_operator[9] = 'a';
+	$$->exp_operator[10] = 'l';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -287,7 +355,18 @@ Exp1: Exp1 Greater Exp2
 | Exp1 DoubleEqual Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "doubleequal";
+	cudaMallocHost((void**)(&($$->exp_operator)),12 * sizeof(char));
+	$$->exp_operator[0] = 'd';
+	$$->exp_operator[1] = 'o';
+	$$->exp_operator[2] = 'u';
+	$$->exp_operator[3] = 'b';
+	$$->exp_operator[4] = 'l';
+	$$->exp_operator[5] = 'e';
+	$$->exp_operator[6] = 'e';
+	$$->exp_operator[7] = 'q';
+	$$->exp_operator[8] = 'u';
+	$$->exp_operator[9] = 'a';
+	$$->exp_operator[10] = 'l';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -297,7 +376,15 @@ Exp1: Exp1 Greater Exp2
 | Exp1 NotEqual Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "notequal";
+	cudaMallocHost((void**)(&($$->exp_operator)),9 * sizeof(char));
+	$$->exp_operator[0] = 'n';
+	$$->exp_operator[1] = 'o';
+	$$->exp_operator[2] = 't';
+	$$->exp_operator[3] = 'e';
+	$$->exp_operator[4] = 'q';
+	$$->exp_operator[5] = 'u';
+	$$->exp_operator[6] = 'a';
+	$$->exp_operator[7] = 'l';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -312,7 +399,11 @@ Exp1: Exp1 Greater Exp2
 Exp2: Exp2 Plus Exp3
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "plus";
+	cudaMallocHost((void**)(&($$->exp_operator)),5 * sizeof(char));
+	$$->exp_operator[0] = 'p';
+	$$->exp_operator[1] = 'l';
+	$$->exp_operator[2] = 'u';
+	$$->exp_operator[3] = 's';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -322,7 +413,12 @@ Exp2: Exp2 Plus Exp3
 | Exp2 Minus Exp3
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "minus";
+	cudaMallocHost((void**)(&($$->exp_operator)),6 * sizeof(char));
+	$$->exp_operator[0] = 'm';
+	$$->exp_operator[1] = 'i';
+	$$->exp_operator[2] = 'n';
+	$$->exp_operator[3] = 'u';
+	$$->exp_operator[4] = 's';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -336,7 +432,11 @@ Exp2: Exp2 Plus Exp3
 Exp3: Exp3 Mult Term
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "mult";
+	cudaMallocHost((void**)(&($$->exp_operator)),5 * sizeof(char));
+	$$->exp_operator[0] = 'm';
+	$$->exp_operator[1] = 'u';
+	$$->exp_operator[2] = 'l';
+	$$->exp_operator[3] = 't';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -346,7 +446,10 @@ Exp3: Exp3 Mult Term
 | Exp3 Div Term
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "div";
+	cudaMallocHost((void**)(&($$->exp_operator)),4 * sizeof(char));
+	$$->exp_operator[0] = 'd';
+	$$->exp_operator[1] = 'i';
+	$$->exp_operator[2] = 'v';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
@@ -356,7 +459,13 @@ Exp3: Exp3 Mult Term
 | Exp3 Modulo Term
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->exp_operator = "modulo";
+	cudaMallocHost((void**)(&($$->exp_operator)),7 * sizeof(char));
+	$$->exp_operator[0] = 'm';
+	$$->exp_operator[1] = 'o';
+	$$->exp_operator[2] = 'd';
+	$$->exp_operator[3] = 'u';
+	$$->exp_operator[4] = 'l';
+	$$->exp_operator[5] = 'o';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
 	if($1->type_of_expr !=  2 || $3->type_of_expr != 2)
@@ -372,7 +481,8 @@ Term
 Term: Identifier
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->column_name = yylval.identifier;
+	cudaMalloc((void**)(&($$->column_name)),sizeof(char)*(1+strlen(yylval.identifier)));
+	strcpy($$->column_name,yylval.identifier);
 	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
@@ -388,7 +498,7 @@ Term: Identifier
 %%
 void yyerror(const char* error_msg)
 {
-	std::cout<<"Failed due to: "<<error_msg<<'\n';
+	std::cout<<error_msg<<'\n';
 	return;
 }
 

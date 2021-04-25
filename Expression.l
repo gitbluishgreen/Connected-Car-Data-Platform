@@ -9,7 +9,8 @@ SelectQuery* process_query(std::string);
 //stores the value of the tokens.
 %}
 /*Flex definitions*/
-value ^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$ 
+integer (0|[1-9][0-9]*)
+value [+-]?{integer}([.][0-9]+)?
 identifier [a-zA-Z_][0-9a-zA-Z_]*
 space "\t"|"\n"|"\r"|"\f"|" "
 %% 
@@ -33,6 +34,7 @@ space "\t"|"\n"|"\r"|"\f"|" "
 "&&" {return And;}
 "||" {return Or;}
 "SELECT" {return Select;}
+"DISTINCT" {return Distinct;}
 "LIMIT" {return Limit;}
 "ORDER" {return Order;}
 "BY" {return By;}
