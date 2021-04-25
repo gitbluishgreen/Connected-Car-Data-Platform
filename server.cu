@@ -10,7 +10,7 @@
 #include <sys/shm.h>
 #include <signal.h>
 #include <mutex> //to forbid concurrent reads and writes.
-#include <thread>//2 threads: one listener and one moderator.
+#include <thread>//4 threads: one listener,one moderator,one query API and one message resolver. 
 #include <fcntl.h>
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
@@ -18,7 +18,7 @@
 #include <thrust/reduce.h>
 #include <thrust/extrema.h>
 #include "Expression.tab.cuh" //to parse any input queries.
-#include "proj_types.cuh"
+#include "proj_types.cuh" //types
 SelectQuery* process_query(std::string);
 void initialize(int,int,int*,std::map<int,int>*);
 Table* t;
@@ -47,17 +47,25 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         SelectQuery* s;
         cudaMallocHost((void**)&s,sizeof(Schema));
-        ExpressionNode* gt;
-        cudaMallocHost((void**)&gt,sizeof(ExpressionNode));
-        gt->column_name = "vehicle_id";
-        gt->left_hand_term = gt->right_hand_term = NULL;
-        s->group_term = gt;
-        s->select_columns.push_back("vehicle_id");
-        std::set<Schema,select_comparator> sx = t->select(s);
+        char* x;
+        cudaMallocHost((void**)&x,11*sizeof(char));
+        x[0] = 'v';
+        x[1] = 'e';
+        x[2] = 'h';
+        x[3] = 'i';
+        x[4] = 'c';
+        x[5] = 'l';
+        x[6] = 'e';
+        x[7] = '_';
+        x[8] = 'i';
+        x[9] = 'd';
+        s->select_columns = new std::vector<char*>();
+        s->distinct_query = true;//suffices to set this flag, now compare values of these columns.
+        s->select_columns->push_back(x);//select columns will be used by the comparator to display.
+        std::set<Schema,select_comparator> sx = t->select(s);//may have to be changed.
         /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
         between listener thread and action thread, since an arbitrary thread handles the signal.)*/
         cudaFreeHost(s);
-        cudaFreeHost(gt);
         std::map<int,int> car_details;
         for(Schema o: sx)
         {
@@ -115,12 +123,13 @@ void listener(int* fd)
 void query_resolver()
 {
     std::string s;
-    while(true)
+    std::ifstream inp;
+    inp.open("query.txt",std::ifstream::in);
+    while(std::getline(inp,s))
     {
-        std::cout<<"Enter your query\n";
-        std::getline(std::cin,s);
         if(s == "KILL")
-            return;
+            break;
+        std::cout<<"Query: "<<s<<'\n';
         SelectQuery* sq = process_query(s);
         std::cout<<sq<<'\n';
         if(sq != NULL){
@@ -128,6 +137,7 @@ void query_resolver()
         std::cout<<"Query resolved with "<<s.size()<<'\n';
         }
     }
+    inp.close();
 }       
 
 int main(int argc, char* argv[])
