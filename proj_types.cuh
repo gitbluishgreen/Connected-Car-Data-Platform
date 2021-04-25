@@ -99,12 +99,13 @@ class SelectQuery
 {
 	public:
 		bool distinct_query;
-		std::vector<char*> select_columns;//either this field or agg columns will be active.
-        std::vector<std::pair<char*,ExpressionNode*>> aggregate_columns;
-		std::vector<std::pair<ExpressionNode*,bool>> order_term;
+		std::vector<char*>* select_columns;//either this field or agg columns will be active.
+        std::vector<std::pair<char*,ExpressionNode*>>* aggregate_columns;
+		std::vector<std::pair<ExpressionNode*,bool>>* order_term;
 		ExpressionNode* select_expression;
         ExpressionNode* group_term;
 		int limit_term;
+        bool distinct;
 		SelectQuery();
 };
 

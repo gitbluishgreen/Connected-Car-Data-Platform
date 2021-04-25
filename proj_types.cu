@@ -148,7 +148,7 @@ __host__ __device__ bool ExpressionNode::evaluate_bool_expression(const Schema& 
 
 SelectQuery::SelectQuery()
 {
-    distinct_query = false;
+    distinct = false;
     limit_term = -1;
 }
 
@@ -170,9 +170,9 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                 return 0;//equal
             else
             {
-                if(select_query->order_term.size() != 0)
+                if(select_query->order_term->size() != 0)
                 {
-                    for(std::pair<ExpressionNode*,bool>& p: select_query->order_term)
+                    for(std::pair<ExpressionNode*,bool>& p: *(select_query->order_term))
                     {
                         if(p.first->type_of_expr == 2)
                         {
@@ -218,9 +218,9 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                 return 0;//equal
             else
             {
-                if(select_query->order_term.size() != 0)
+                if(select_query->order_term->size() != 0)
                 {
-                    for(std::pair<ExpressionNode*,bool>& p: select_query->order_term)
+                    for(std::pair<ExpressionNode*,bool>& p: *(select_query->order_term))
                     {
                         if(p.first->type_of_expr == 2)
                         {
@@ -261,9 +261,9 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
     else
     {
         //just order by if present.
-        if(select_query->order_term.size() != 0)
+        if(select_query->order_term->size() != 0)
         {
-            for(std::pair<ExpressionNode*,bool> p: select_query->order_term)
+            for(std::pair<ExpressionNode*,bool> p: *(select_query->order_term))
             {
                 if(p.first->type_of_expr == 2)
                 {
