@@ -120,6 +120,49 @@ void listener(int* fd)
         t->update_worklist(s);
     }
 }
+void display(ExpressionNode* curr_node,ExpressionNode* parent)
+{
+    if(curr_node == NULL)
+        return;
+    std::cout<<curr_node<<":\n";
+    if(curr_node->exp_operator != NULL)
+        std::cout<<"Opcode: "<<curr_node->exp_operator<<'\n';
+    if(curr_node->column_name != NULL)
+        std::cout<<"Column name: "<<curr_node->column_name<<'\n';
+    std::cout<<"Value,Type,Parent "<<curr_node->value<<" "<<curr_node->type_of_expr<<" "<<parent<<'\n';
+    display(curr_node->left_hand_term,curr_node);
+    display(curr_node->right_hand_term,curr_node);
+    
+}
+
+void show(SelectQuery* sq)
+{
+    if(sq == NULL)
+    {
+        std::cout<<"NULL, so can't print!\n";
+    }       
+    else
+    {
+        if(sq->select_columns != NULL)
+            for(auto it: *(sq->select_columns))
+                std::cout<<it<<' ';
+        if(sq->aggregate_columns != NULL)
+            for(auto it: *(sq->aggregate_columns))
+                std::cout<<"("<<it.first<<" "<<it.second<<"),";
+        //std::cout<<'\n';
+        std::cout<<sq->limit_term<<'\n';
+        display(sq->select_expression,NULL);
+        // Schema s1;
+        // s1.vehicle_id = 100;
+        // printf("Came here for one query and it is %p!\n",sq->select_expression);
+        // if(sq->select_expression != NULL)
+        // {
+        //     printf("Res is %d\n",sq->select_expression->evaluate_bool_expression(s1));
+        // }
+    }
+}
+
+
 void query_resolver()
 {
     std::string s;
@@ -129,16 +172,15 @@ void query_resolver()
     {
         if(s == "KILL")
             break;
-        std::cout<<"Query: "<<s<<'\n';
         SelectQuery* sq = process_query(s);
-        std::cout<<sq<<'\n';
-        if(sq != NULL){
-        std::set<Schema,select_comparator> s = t->select(sq);
-        std::cout<<"Query resolved with "<<s.size()<<'\n';
-        }
+        //std::cout<<"Query:\n";
+        show(sq);
+        std::set<Schema,select_comparator> res = t->select(sq);
+        std::cout<<"Return value is "<<res.size()<<'\n';
+        t->PrintDatabase();
     }
     inp.close();
-}       
+}
 
 int main(int argc, char* argv[])
 {

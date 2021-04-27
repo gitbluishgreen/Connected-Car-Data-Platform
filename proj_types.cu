@@ -24,44 +24,40 @@ __host__ __device__ ExpressionNode::ExpressionNode(char* op)
     left_hand_term = right_hand_term = NULL;
     exp_operator = op;
 }
-__host__ __device__ int ExpressionNode::evaluate_int_expr(const Schema& s)
+__host__ __device__ int ExpressionNode::evaluate_int_expression(const Schema& s)
 {
     if(type_of_expr != 2)
         return 0;
     if(left_hand_term == NULL)
-        return 0;
+    {
+        if(str_equal(column_name,"vehicle_id"))
+                return s.vehicle_id;
+        else if(str_equal(column_name,"origin_vertex"))
+            return s.origin_vertex;
+        else if(str_equal(column_name,"destination_vertex"))
+            return s.destination_vertex;
+        else
+            return (int)value;
+    }
     else
     {
-        if(right_hand_term == NULL)
-        {
-            if(str_equal(column_name,"vehicle_id"))
-                return s.vehicle_id;
-            else if(str_equal(column_name,"origin_vertex"))
-                return s.origin_vertex;
-            else if(str_equal(column_name,"destination_vertex"))
-                return s.destination_vertex;
-        }
+        int x = left_hand_term->evaluate_int_expression(s);
+        int y = right_hand_term->evaluate_int_expression(s);
+        if(str_equal(exp_operator,"plus"))
+            return x+y;
+        else if(str_equal(exp_operator,"minus"))
+            return x-y;
+        else if(str_equal(exp_operator,"mult"))
+            return x*y;
+        else if(str_equal(exp_operator,"div"))
+            return x/y;
+        else if(str_equal(exp_operator,"modulo"))
+            return x%y;
         else
-        {
-            int x = left_hand_term->evaluate_int_expr(s);
-            int y = right_hand_term->evaluate_int_expr(s);
-            if(str_equal(exp_operator,"plus"))
-                return x+y;
-            else if(str_equal(exp_operator,"minus"))
-                return x-y;
-            else if(str_equal(exp_operator,"mult"))
-                return x*y;
-            else if(str_equal(exp_operator,"div"))
-                return x/y;
-            else if(str_equal(exp_operator,"modulo"))
-                return x%y;
-            else
-                return 0;
-        }
-        return 0;
+            return 0;
     }
 }
-__host__ __device__ double ExpressionNode::evaluate_double_expr(const Schema& s)
+__host__ __device__ double ExpressionNode::evaluate_double_expression(const Schema& s)
 {
     if(type_of_expr != 3)
         return 0.0;
@@ -90,8 +86,8 @@ __host__ __device__ double ExpressionNode::evaluate_double_expr(const Schema& s)
     }
     else
     {
-        double a1 = left_hand_term->evaluate_double_expr(s);
-        double a2 = right_hand_term->evaluate_double_expr(s);
+        double a1 = left_hand_term->evaluate_double_expression(s);
+        double a2 = right_hand_term->evaluate_double_expression(s);
         if(str_equal(exp_operator,"plus"))
             return a1+a2;
         else if(str_equal(exp_operator,"minus"))
@@ -114,17 +110,17 @@ __host__ __device__ bool ExpressionNode::evaluate_bool_expression(const Schema& 
             return !left_hand_term->evaluate_bool_expression(s);
         if(str_equal(column_name,"accel"))
             return s.accel;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"seatbelt"))
             return s.seatbelt;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"hard_brake"))
             return s.hard_brake;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"door_lock"))
             return s.door_lock;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"gear_toggle"))
             return s.gear_toggle;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"clutch"))
             return s.clutch;
-        else if(str_equal(column_name,"accel"))
+        else if(str_equal(column_name,"hard_steer"))
             return s.hard_steer;
         else
         {
@@ -135,14 +131,43 @@ __host__ __device__ bool ExpressionNode::evaluate_bool_expression(const Schema& 
     }
     else
     {
-        bool x = left_hand_term->evaluate_bool_expression(s);
-        bool y = right_hand_term->evaluate_bool_expression(s);
-        if(str_equal(exp_operator,"Or"))
-            return x|y;
-        else if(str_equal(exp_operator,"And"))
-            return x&y;
+        if(left_hand_term->type_of_expr == 1)
+        {
+            bool x = left_hand_term->evaluate_bool_expression(s);
+            bool y = right_hand_term->evaluate_bool_expression(s);
+            if(str_equal(exp_operator,"or"))
+                return x|y;
+            else if(str_equal(exp_operator,"and"))
+                return x&y;
+            else
+                return false;
+        }
         else
-            return false;
+        {
+            double x,y;
+            if(left_hand_term->type_of_expr == 2)
+                x = left_hand_term->evaluate_int_expression(s);
+            else
+                x = left_hand_term->evaluate_double_expression(s);
+            if(right_hand_term->type_of_expr == 2)
+                y = right_hand_term->evaluate_int_expression(s);
+            else
+                y = right_hand_term->evaluate_double_expression(s);
+            if(str_equal(exp_operator,"greater"))
+                return x > y;
+            if(str_equal(exp_operator,"lesser"))
+                return x < y;
+            if(str_equal(exp_operator,"greaterequal"))
+                return x >= y;
+            if(str_equal(exp_operator,"lesserequal"))
+                return x <= y;
+            if(str_equal(exp_operator,"doubleequal"))
+                return x == y;
+            if(str_equal(exp_operator,"notequal"))
+                return x != y;
+            else
+                return false;
+        }
     }
 }
 
@@ -164,8 +189,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
         if(v1 == 2)
         {
             /*WARNING: We are running the function on host here.*/
-            int a1  = select_query->group_term->evaluate_int_expr(s1);
-            int a2 = select_query->group_term->evaluate_int_expr(s2); 
+            int a1  = select_query->group_term->evaluate_int_expression(s1);
+            int a2 = select_query->group_term->evaluate_int_expression(s2); 
             if(a1 == a2)
                 return 0;//equal
             else
@@ -176,8 +201,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                     {
                         if(p.first->type_of_expr == 2)
                         {
-                            int a11 = p.first->evaluate_int_expr(s1);
-                            int a22 = p.first->evaluate_int_expr(s2);
+                            int a11 = p.first->evaluate_int_expression(s1);
+                            int a22 = p.first->evaluate_int_expression(s2);
                             if(a11 == a22)
                                 continue;
                             else
@@ -190,8 +215,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                         }
                         else
                         {
-                            double a11 = p.first->evaluate_double_expr(s1);
-                            double a22 = p.first->evaluate_double_expr(s2);
+                            double a11 = p.first->evaluate_double_expression(s1);
+                            double a22 = p.first->evaluate_double_expression(s2);
                             if(a11 == a22)
                                 continue;
                             else
@@ -212,8 +237,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
         else
         {
             /*WARNING: We are running the function on host here.*/
-            double a1  = select_query->group_term->evaluate_double_expr(s1);
-            double a2 = select_query->group_term->evaluate_double_expr(s2); 
+            double a1  = select_query->group_term->evaluate_double_expression(s1);
+            double a2 = select_query->group_term->evaluate_double_expression(s2); 
             if(a1 == a2)
                 return 0;//equal
             else
@@ -224,8 +249,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                     {
                         if(p.first->type_of_expr == 2)
                         {
-                            int a11 = p.first->evaluate_int_expr(s1);
-                            int a22 = p.first->evaluate_int_expr(s2);
+                            int a11 = p.first->evaluate_int_expression(s1);
+                            int a22 = p.first->evaluate_int_expression(s2);
                             if(a11 == a22)
                                 continue;
                             else
@@ -238,8 +263,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                         }
                         else
                         {
-                            double a11 = p.first->evaluate_double_expr(s1);
-                            double a22 = p.first->evaluate_double_expr(s2);
+                            double a11 = p.first->evaluate_double_expression(s1);
+                            double a22 = p.first->evaluate_double_expression(s2);
                             if(a11 == a22)
                                 continue;
                             else
@@ -267,8 +292,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
             {
                 if(p.first->type_of_expr == 2)
                 {
-                    int a11 = p.first->evaluate_int_expr(s1);
-                    int a22 = p.first->evaluate_int_expr(s2);
+                    int a11 = p.first->evaluate_int_expression(s1);
+                    int a22 = p.first->evaluate_int_expression(s2);
                     if(a11 == a22)
                         continue;
                     else
@@ -281,8 +306,8 @@ int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on ho
                 }
                 else
                 {
-                    double a11 = p.first->evaluate_double_expr(s1);
-                    double a22 = p.first->evaluate_double_expr(s2);
+                    double a11 = p.first->evaluate_double_expression(s1);
+                    double a22 = p.first->evaluate_double_expression(s2);
                     if(a11 == a22)
                         continue;
                     else
@@ -462,6 +487,7 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
     cudaMalloc((void**)&endIndexSelectedValues, sizeof(int));
     cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.        
     init_bt(numberOfRows);
+    //std::cout<<"Acquired lock, going for kernel launch!\n";
     selectKernel<<<nb, nt>>>(
             StateDatabase,
             numberOfRows,
@@ -470,6 +496,7 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
             select_query
         );
     cudaDeviceSynchronize();
+    //std::cout<<"Kernel Launch done!\n";
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
     retArr = new Schema[size];
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
@@ -477,6 +504,7 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
     mtx.unlock();
     std::set<Schema,select_comparator> return_values(retArr, retArr+size,select_comparator(select_query));
     int ms = std::max((int)(return_values.size()),select_query->limit_term);
+    // std::cout<<return_values.size()<<" is the size of the set to be cut to "<<ms<<'\n';
     while(return_values.size() > ms)
     {
         return_values.erase(std::prev(return_values.end()));//remove the last few elements of the select query.
@@ -486,7 +514,15 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
 
 void Table::PrintDatabase()
 {
-    //iterate through the table and print out. 
+    //iterate through the table and print out.
+    mtx.lock();
+    Schema* arr = new Schema[numberOfRows];
+    cudaMemcpy(arr,StateDatabase,numberOfRows*sizeof(Schema),cudaMemcpyDeviceToHost);
+    for(int i = 0;i < numberOfRows;i++)
+    {
+        std::cout<<"Vehicle ID = "<<arr[i].vehicle_id<<'\n';
+    } 
+    mtx.unlock();
 }
 
 void GPSSystem::init_bt(int numThreads)
@@ -712,6 +748,8 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
 
 __host__ __device__ bool str_equal(const char* s1, const char* s2)
 {
+    if(s1 == NULL || s2 == NULL)
+        return (s1 == NULL && s2 == NULL);
     int i = 0;
     int j = 0;
     while(s1[i] != '\0')

@@ -75,7 +75,7 @@ __global__ void selectKernel(
 {
     //select logic with expression evaluation.
     int id = blockIdx.x*blockDim.x+threadIdx.x;
-    if(id < numberOfRows && select_query->select_expression->evaluate_bool_expression(StateDatabase[id]))
+    if(id < numberOfRows && ((select_query->select_expression == NULL) || ((select_query->select_expression != NULL) &&  select_query->select_expression->evaluate_bool_expression(StateDatabase[id]))))
     {
         int i = atomicAdd(endIndexSelectedValues, 1);
         selectedValues[i] = StateDatabase[id];
