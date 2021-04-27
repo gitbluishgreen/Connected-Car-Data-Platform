@@ -90,8 +90,8 @@ class ExpressionNode
         int type_of_expr;//can be either 1,2 or 3, if bool/integer/floating point.
         __host__ __device__ ExpressionNode();
         __host__ __device__ ExpressionNode(char*);
-        __host__ __device__ int evaluate_int_expr(const Schema&);
-        __host__ __device__ double evaluate_double_expr(const Schema&);
+        __host__ __device__ int evaluate_int_expression(const Schema&);
+        __host__ __device__ double evaluate_double_expression(const Schema&);
         __host__ __device__ bool evaluate_bool_expression(const Schema&);
 };
 
