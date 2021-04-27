@@ -1,0 +1,2 @@
+SELECT * LIMIT 10
+SELECT vehicle_id LIMIT 100
