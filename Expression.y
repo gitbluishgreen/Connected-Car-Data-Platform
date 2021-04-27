@@ -5,6 +5,7 @@
 	#include <stdlib.h>
 	#include <utility>
 	#include <vector>
+	#include <algorithm>
 	#include <map>
 	#include <cmath>
 	#include "proj_types.cuh"
@@ -33,13 +34,13 @@
 }
 %start goal;
 %type <SelectObject> Select_Query goal
-%type <value> LimitExp 
+%type <value> LimitExp Value
 %type <distinct> OrderCriteria DistinctQualifier
 %type <expression_list> MultiAggCol AggCol
 %type <name_list> Columns MultiCol
 %type <order_list> OrderExp ExpList
 %type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp 
-%type <identifier> AggregateFunction
+%type <identifier> AggregateFunction Identifier
 %token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Distinct Where Order Group By Limit Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
 %%
 goal: Select_Query
@@ -57,6 +58,7 @@ Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 	}
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));//pinned memory
 	$$->distinct = $2;
+	std::reverse($3->begin(),$3->end());
 	$$->select_columns = $3;
 	$$->select_expression = $4;
 	$$->order_term = $5;
@@ -65,7 +67,9 @@ Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 }
 | Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
+	//std::cout<<"Hola, I've found aggcols!\n";
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));
+	std::reverse($2->begin(),$2->end());
 	$$->aggregate_columns = $2;
 	$$->select_expression =  $3;
 	$$->group_term = $4;
@@ -86,7 +90,7 @@ DistinctQualifier: Distinct
 Columns: Identifier MultiCol
 {
 	$$ = $2;
-	$$->push_back(yylval.identifier);
+	$$->push_back($1);
 }
 |
 Mult
@@ -97,7 +101,7 @@ Mult
 MultiCol: MultiCol Comma Identifier
 {
 	$$ = $1;
-	$$->push_back(yylval.identifier);
+	$$->push_back($3);
 }
 | 
 /*empty*/
@@ -193,13 +197,14 @@ AggregateFunction: Maximum
 AggCol: 
 AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
+	//std::cout<<"Aggcols ftw!\n";
 	$$ = $5;
 	$$->push_back(std::make_pair($1,$3));
 };
-MultiAggCol: Comma AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
+MultiAggCol: MultiAggCol Comma AggregateFunction OpeningBracket Exp ClosingBracket
 {
-	$$ = $6;
-	$$->push_back(std::make_pair($2,$4));
+	$$ = $1;
+	$$->push_back(std::make_pair($3,$5));
 }
 |
 /*empty*/
@@ -228,10 +233,10 @@ Order By ExpList
 	$$ = NULL;
 };
 ExpList: 
-Exp OrderCriteria ExpList
+ExpList Exp OrderCriteria
 {
-	$$ = $3;
-	$$->push_back(std::make_pair($1,$2));
+	$$ = $1;
+	$$->push_back(std::make_pair($2,$3));
 }
 | 
 Exp OrderCriteria 
@@ -242,12 +247,15 @@ Exp OrderCriteria
 
 Exp: Exp Or Exp1
 {
+	//std::cout<<"Reached Expression!\n";
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),3 * sizeof(char));
 	$$->exp_operator[0] = 'o';
 	$$->exp_operator[1] = 'r';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
+	if($1->type_of_expr != 1 || $3->type_of_expr!= 1)
+		YYABORT;
 	$$->type_of_expr =  1;
 }
 | Exp And Exp1
@@ -259,6 +267,8 @@ Exp: Exp Or Exp1
 	$$->exp_operator[2] = 'd';
 	$$->left_hand_term = $1;
 	$$->right_hand_term = $3;
+	if($1->type_of_expr != 1 || $3->type_of_expr!= 1)
+		YYABORT;
 	$$->type_of_expr =  1;
 }
 | Not Exp1
@@ -269,12 +279,13 @@ Exp: Exp Or Exp1
 	$$->exp_operator[1] = 'o';
 	$$->exp_operator[2] = 't';
 	$$->left_hand_term = $2;
-	if($$->type_of_expr != 1)
+	if($2->type_of_expr != 1)
 		YYABORT;
 	$$->type_of_expr =  1;
 }
 | Exp1
 {
+	//std::cout<<"Exp -> Exp1!\n";
 	$$=$1;
 };
 
@@ -393,6 +404,7 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp2
 {
+	//std::cout<<"Exp1 -> Exp2!\n";
 	$$ = $1;
 };
 
@@ -427,6 +439,7 @@ Exp2: Exp2 Plus Exp3
 }
 | Exp3
 {
+	//std::cout<<"Exp2 -> Exp3!\n";
 	$$ = $1;
 };
 Exp3: Exp3 Mult Term
@@ -475,21 +488,23 @@ Exp3: Exp3 Mult Term
 |
 Term
 {
+	//std::cout<<"Exp3 -> Term\n";
 	$$ = $1;
 };
 
 Term: Identifier
 {
+	//std::cout<<"Term -> Identifier!\n";
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	cudaMalloc((void**)(&($$->column_name)),sizeof(char)*(1+strlen(yylval.identifier)));
-	strcpy($$->column_name,yylval.identifier);
+	cudaMallocHost((void**)(&($$->column_name)),sizeof(char)*(1+strlen($1)));
+	strcpy($$->column_name,$1);
 	$$->type_of_expr =  get_type($$->column_name);
 }
 | Value
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->value = yylval.value;
-	$$->type_of_expr =  (floor(yylval.value) == yylval.value)?2:3;
+	$$->value =$1;
+	$$->type_of_expr =  (floor($1) == $1)?2:3;
 }
 | OpeningBracket Exp ClosingBracket
 {
@@ -511,7 +526,8 @@ void update_columns(std::vector<char*>* v)
 	for(auto it: column_map)
 	{
 		const char* t = it.first.c_str();
-		char* s = new char[strlen(t)+1];
+		char* s;
+		cudaMallocHost((void**)&s,strlen(t)+1);
 		strcpy(s,t);
 		v->push_back(s);
 	}

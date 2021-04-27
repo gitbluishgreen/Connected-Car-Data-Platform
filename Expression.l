@@ -10,7 +10,7 @@ SelectQuery* process_query(std::string);
 %}
 /*Flex definitions*/
 integer (0|[1-9][0-9]*)
-value [+-]?{integer}([.][0-9]+)?
+value {integer}([.][0-9]+)?
 identifier [a-zA-Z_][0-9a-zA-Z_]*
 space "\t"|"\n"|"\r"|"\f"|" "
 %% 
