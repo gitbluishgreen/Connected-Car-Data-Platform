@@ -3,6 +3,53 @@
 #include "kernel.cuh"
 Schema::Schema(){}
 Schema::Schema(int dummy){}
+__host__ __device__ Schema::Schema(const Schema& s)
+{
+    vehicle_id = s.vehicle_id;//the process ID of the car serves as the vehicle ID.
+    database_index = s.database_index;//fixed constant for mapping to the database purposes for anomaly detection.
+    oil_life_pct = s.oil_life_pct;//oil percentage
+    tire_p_rl = s.tire_p_rl;//tire pressures on each tire.
+    tire_p_rr = s.tire_p_rr;
+    tire_p_fl = s.tire_p_fl;
+    tire_p_fr = s.tire_p_fr;
+    batt_volt = s.batt_volt;
+    fuel_percentage = s.fuel_percentage;
+    accel = s.accel;
+    seatbelt = s.seatbelt;
+    hard_brake = s.hard_brake;
+    door_lock = s.door_lock;
+    gear_toggle = s.gear_toggle;
+    clutch = s.clutch;
+    hard_steer = s.hard_steer;
+    speed = s.speed;
+    distance = s.distance;
+    origin_vertex = s.origin_vertex;
+    destination_vertex = s.destination_vertex;
+}
+__host__ __device__ Schema& Schema::operator = (const Schema& s)
+{
+    this->vehicle_id = s.vehicle_id;//the process ID of the car serves as the vehicle ID.
+    this->database_index = s.database_index;//fixed constant for mapping to the database purposes for anomaly detection.
+    this->oil_life_pct = s.oil_life_pct;//oil percentage
+    this->tire_p_rl = s.tire_p_rl;//tire pressures on each tire.
+    this->tire_p_rr = s.tire_p_rr;
+    this->tire_p_fl = s.tire_p_fl;
+    this->tire_p_fr = s.tire_p_fr;
+    this->batt_volt = s.batt_volt;
+    this->fuel_percentage = s.fuel_percentage;
+    this->accel = s.accel;
+    this->seatbelt = s.seatbelt;
+    this->hard_brake = s.hard_brake;
+    this->door_lock = s.door_lock;
+    this->gear_toggle = s.gear_toggle;
+    this->clutch = s.clutch;
+    this->hard_steer = s.hard_steer;
+    this->speed = s.speed;
+    this->distance = s.distance;
+    this->origin_vertex = s.origin_vertex;
+    this->destination_vertex = s.destination_vertex;
+    return *this;
+}
 
 Limits::Limits()
 {
@@ -335,13 +382,20 @@ void Table::WriteRows()
     cudaMalloc((void**)&device_indices,num_mod_rows*sizeof(int));
     cudaMalloc((void**)&deviceRowsToBeModified,num_mod_rows*sizeof(Schema));
     int i = 0;
+    Schema* hostRowsToBeModified = new Schema[num_mod_rows];
+    int* hostIndicesToBeModified = new int[num_mod_rows];
     for(std::pair<int,Schema> s: work_list)
     {
-        cudaMemcpy(deviceRowsToBeModified+i,&(s.second),sizeof(Schema),cudaMemcpyHostToDevice);
-        cudaMemcpy(device_indices+i,&(s.first),sizeof(int),cudaMemcpyHostToDevice);
+        hostRowsToBeModified[i] = s.second;
+        hostIndicesToBeModified[i] = s.first;
+        i++;
     }
+    cudaMemcpy(deviceRowsToBeModified,hostRowsToBeModified,num_mod_rows*sizeof(Schema),cudaMemcpyHostToDevice);
+    cudaMemcpy(device_indices,hostIndicesToBeModified,num_mod_rows*sizeof(int),cudaMemcpyHostToDevice);
     changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
     cudaDeviceSynchronize();
+    delete hostRowsToBeModified;
+    delete hostIndicesToBeModified;
 }
 
 void Table::init_bt(int num_threads)
@@ -496,7 +550,7 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
             select_query
         );
     cudaDeviceSynchronize();
-    //std::cout<<"Kernel Launch done!\n";
+    std::cout<<"Kernel Launch done!\n";
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
     retArr = new Schema[size];
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
@@ -504,7 +558,7 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
     mtx.unlock();
     std::set<Schema,select_comparator> return_values(retArr, retArr+size,select_comparator(select_query));
     int ms = std::max((int)(return_values.size()),select_query->limit_term);
-    // std::cout<<return_values.size()<<" is the size of the set to be cut to "<<ms<<'\n';
+    std::cout<<return_values.size()<<" is the size of the set to be cut to "<<ms<<'\n';
     while(return_values.size() > ms)
     {
         return_values.erase(std::prev(return_values.end()));//remove the last few elements of the select query.
@@ -518,12 +572,14 @@ void Table::PrintDatabase()
     mtx.lock();
     Schema* arr = new Schema[numberOfRows];
     cudaMemcpy(arr,StateDatabase,numberOfRows*sizeof(Schema),cudaMemcpyDeviceToHost);
+    printf("Printing Database now!\n");
     for(int i = 0;i < numberOfRows;i++)
     {
-        std::cout<<"Vehicle ID = "<<arr[i].vehicle_id<<'\n';
+        printf("Vehicle ID = %d\n",arr[i].vehicle_id);
     } 
     mtx.unlock();
 }
+
 
 void GPSSystem::init_bt(int numThreads)
 {

@@ -174,9 +174,9 @@ void query_resolver()
             break;
         SelectQuery* sq = process_query(s);
         //std::cout<<"Query:\n";
-        show(sq);
-        std::set<Schema,select_comparator> res = t->select(sq);
-        std::cout<<"Return value is "<<res.size()<<'\n';
+        //show(sq);
+        //std::set<Schema,select_comparator> res = t->select(sq);
+        //std::cout<<"Return value is "<<res.size()<<'\n';
         t->PrintDatabase();
     }
     inp.close();
