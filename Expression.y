@@ -293,6 +293,8 @@ Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),8 * sizeof(char));
+	$$->left_hand_term = $1;
+	$$->right_hand_term = $3;
 	$$->exp_operator[0] = 'g';
 	$$->exp_operator[1] = 'r';
 	$$->exp_operator[2] = 'e';
@@ -300,8 +302,6 @@ Exp1: Exp1 Greater Exp2
 	$$->exp_operator[4] = 't';
 	$$->exp_operator[5] = 'e';
 	$$->exp_operator[6] = 'r';
-	$$->left_hand_term = $1;
-	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
 	$$->type_of_expr =  1;
@@ -310,14 +310,14 @@ Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),7 * sizeof(char));
+	$$->left_hand_term = $1;
+	$$->right_hand_term = $3;
 	$$->exp_operator[0] = 'l';
 	$$->exp_operator[1] = 'e';
 	$$->exp_operator[2] = 's';
 	$$->exp_operator[3] = 's';
 	$$->exp_operator[4] = 'e';
 	$$->exp_operator[5] = 'r';
-	$$->left_hand_term = $1;
-	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
 	$$->type_of_expr =  1;
@@ -326,6 +326,8 @@ Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),13 * sizeof(char));
+	$$->left_hand_term = $1;
+	$$->right_hand_term = $3;
 	$$->exp_operator[0] = 'g';
 	$$->exp_operator[1] = 'r';
 	$$->exp_operator[2] = 'e';
@@ -346,6 +348,8 @@ Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),12 * sizeof(char));
+	$$->left_hand_term = $1;
+	$$->right_hand_term = $3;
 	$$->exp_operator[0] = 'l';
 	$$->exp_operator[1] = 'e';
 	$$->exp_operator[2] = 's';
@@ -357,8 +361,6 @@ Exp1: Exp1 Greater Exp2
 	$$->exp_operator[8] = 'u';
 	$$->exp_operator[9] = 'a';
 	$$->exp_operator[10] = 'l';
-	$$->left_hand_term = $1;
-	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
 	$$->type_of_expr =  1;
@@ -388,6 +390,8 @@ Exp1: Exp1 Greater Exp2
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),9 * sizeof(char));
+	$$->left_hand_term = $1;
+	$$->right_hand_term = $3;
 	$$->exp_operator[0] = 'n';
 	$$->exp_operator[1] = 'o';
 	$$->exp_operator[2] = 't';
@@ -396,8 +400,6 @@ Exp1: Exp1 Greater Exp2
 	$$->exp_operator[5] = 'u';
 	$$->exp_operator[6] = 'a';
 	$$->exp_operator[7] = 'l';
-	$$->left_hand_term = $1;
-	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
 	$$->type_of_expr =  1;
@@ -547,7 +549,7 @@ SelectQuery* process_query(std::string query)
 {
 	if(column_map.size() == 0)
 	{
-		column_map["vehicle_id"] = 2;
+		column_map["vehicle_id"] = column_map["origin_vertex"] = column_map["destination_vertex"] = 2;
 		column_map["database_index"] = 2;
 		column_map["oil_life_pct"] = 3;
 		column_map["tire_p_fl"] = column_map["tire_p_fr"] = column_map["tire_p_rl"] = column_map["tire_p_rr"] = 3;

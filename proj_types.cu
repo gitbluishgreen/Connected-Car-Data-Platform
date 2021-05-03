@@ -228,148 +228,117 @@ select_comparator::select_comparator(SelectQuery* sq)
 {
     select_query = sq;//pointer to a pinned memory location.
 }
-int select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on host memory now.
+bool select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on host memory now.
 {
-    if(select_query->group_term != NULL)
+    if(select_query->distinct)
     {
-        int v1 = select_query->group_term->type_of_expr;
-        if(v1 == 2)
+        //select term exists. Order by this for now.
+        std::vector<char*>::iterator it;
+        bool fl = true;
+        for(it = select_query->select_columns->begin();it != select_query->select_columns->end();it++)
         {
-            /*WARNING: We are running the function on host here.*/
-            int a1  = select_query->group_term->evaluate_int_expression(s1);
-            int a2 = select_query->group_term->evaluate_int_expression(s2); 
-            if(a1 == a2)
-                return 0;//equal
-            else
-            {
-                if(select_query->order_term->size() != 0)
-                {
-                    for(std::pair<ExpressionNode*,bool>& p: *(select_query->order_term))
-                    {
-                        if(p.first->type_of_expr == 2)
-                        {
-                            int a11 = p.first->evaluate_int_expression(s1);
-                            int a22 = p.first->evaluate_int_expression(s2);
-                            if(a11 == a22)
-                                continue;
-                            else
-                            {
-                                if(!p.second)
-                                    return (a11 < a22)?-1:1;
-                                else
-                                    return (a11 < a22)?1:-1;
-                            }
-                        }
-                        else
-                        {
-                            double a11 = p.first->evaluate_double_expression(s1);
-                            double a22 = p.first->evaluate_double_expression(s2);
-                            if(a11 == a22)
-                                continue;
-                            else
-                            {
-                                if(!p.second)
-                                    return (a11 < a22)?-1:1;
-                                else
-                                    return (a11 < a22)?1:-1;
-                            }
-                        }
-                    }
-                    return -1;
-                }
-                else
-                return -1;//simply order as read by table. 
+            if(str_equal(*it,"vehicle_id")){
+                fl = fl & (s1.vehicle_id == s2.vehicle_id);
+            }
+            else if(str_equal(*it,"origin_vertex")){
+                fl = fl & (s1.origin_vertex == s2.origin_vertex);
+            }
+            else if(str_equal(*it,"destination_vertex")){
+                fl = fl & (s1.destination_vertex == s2.destination_vertex);
+            }
+            else if(str_equal(*it,"oil_life_pct")){
+                fl = fl & (s1.oil_life_pct == s2.oil_life_pct);
+            }
+            else if(str_equal(*it,"tire_p_rl")){
+                fl = fl & (s1.tire_p_rl == s2.tire_p_rl);
+            }
+            else if(str_equal(*it,"tire_p_rr")){
+                fl = fl & (s1.tire_p_rr == s2.tire_p_rr);
+            }
+            else if(str_equal(*it,"tire_p_fl")){
+                fl = fl & (s1.tire_p_fl == s2.tire_p_fl);
+            }
+            else if(str_equal(*it,"tire_p_fr")){
+                fl = fl & (s1.tire_p_fr == s2.tire_p_fr);
+            }
+            else if(str_equal(*it,"batt_volt")){
+                fl = fl & (s1.batt_volt == s2.batt_volt);
+            }
+            else if(str_equal(*it,"fuel_percentage")){
+                fl = fl & (s1.fuel_percentage == s2.fuel_percentage);
+            }
+            else if(str_equal(*it,"accel")){
+                fl = fl & (s1.accel == s2.accel);}
+            else if(str_equal(*it,"seatbelt")){
+                fl = fl & (s1.seatbelt == s2.seatbelt);
+            }
+            else if(str_equal(*it,"hard_brake")){
+                fl = fl & (s1.hard_brake == s2.hard_brake);
+            }
+            else if(str_equal(*it,"door_lock")){
+                fl = fl & (s1.door_lock == s2.door_lock);
+            }
+            else if(str_equal(*it,"gear_toggle")){
+                fl = fl & (s1.gear_toggle == s2.gear_toggle);
+            }
+            else if(str_equal(*it,"clutch")){
+                fl = fl & (s1.clutch == s2.clutch);
+            }
+            else if(str_equal(*it,"hard_steer")){
+                fl = fl & (s1.hard_steer == s2.hard_steer);
+            }
+            else if(str_equal(*it,"speed")){
+                fl = fl & (s1.speed == s2.speed);
+            }
+            else if(str_equal(*it,"distance")){
+                fl = fl & (s1.distance == s2.distance);
             }
         }
-        else
+        if(fl)
         {
-            /*WARNING: We are running the function on host here.*/
-            double a1  = select_query->group_term->evaluate_double_expression(s1);
-            double a2 = select_query->group_term->evaluate_double_expression(s2); 
-            if(a1 == a2)
-                return 0;//equal
+            return false;
+        }
+    }
+    //filtered out based on distinct qualifier alone.
+    
+    if(select_query->order_term != NULL && select_query->order_term->size() != 0)
+    {
+        for(std::pair<ExpressionNode*,bool> p: *(select_query->order_term))
+        {
+            if(p.first->type_of_expr == 2)
+            {
+                int a11 = p.first->evaluate_int_expression(s1);
+                int a22 = p.first->evaluate_int_expression(s2);
+                if(a11 == a22)
+                    continue;
+                else
+                {
+                    if(!p.second)
+                        return (a11 < a22);
+                    else
+                        return (a11 > a22);
+                }
+            }
             else
             {
-                if(select_query->order_term->size() != 0)
-                {
-                    for(std::pair<ExpressionNode*,bool>& p: *(select_query->order_term))
-                    {
-                        if(p.first->type_of_expr == 2)
-                        {
-                            int a11 = p.first->evaluate_int_expression(s1);
-                            int a22 = p.first->evaluate_int_expression(s2);
-                            if(a11 == a22)
-                                continue;
-                            else
-                            {
-                                if(!p.second)
-                                    return (a11 < a22)?-1:1;
-                                else
-                                    return (a11 < a22)?1:-1;
-                            }
-                        }
-                        else
-                        {
-                            double a11 = p.first->evaluate_double_expression(s1);
-                            double a22 = p.first->evaluate_double_expression(s2);
-                            if(a11 == a22)
-                                continue;
-                            else
-                            {
-                                if(!p.second)
-                                    return (a11 < a22)?-1:1;
-                                else
-                                    return (a11 < a22)?1:-1;
-                            }
-                        }
-                    }
-                    return -1;
-                }
+                double a11 = p.first->evaluate_double_expression(s1);
+                double a22 = p.first->evaluate_double_expression(s2);
+                if(a11 == a22)
+                    continue;
                 else
-                return -1;//simply order as read by table. 
-            }   
+                {
+                    if(!p.second)
+                        return (a11 < a22);
+                    else
+                        return (a11 > a22);
+                }
+            }
         }
+        return true;
     }
     else
     {
-        //just order by if present.
-        if(select_query->order_term->size() != 0)
-        {
-            for(std::pair<ExpressionNode*,bool> p: *(select_query->order_term))
-            {
-                if(p.first->type_of_expr == 2)
-                {
-                    int a11 = p.first->evaluate_int_expression(s1);
-                    int a22 = p.first->evaluate_int_expression(s2);
-                    if(a11 == a22)
-                        continue;
-                    else
-                    {
-                        if(!p.second)
-                            return (a11 < a22)?-1:1;
-                        else
-                            return (a11 < a22)?1:-1;
-                    }
-                }
-                else
-                {
-                    double a11 = p.first->evaluate_double_expression(s1);
-                    double a22 = p.first->evaluate_double_expression(s2);
-                    if(a11 == a22)
-                        continue;
-                    else
-                    {
-                        if(!p.second)
-                            return (a11 < a22)?-1:1;
-                        else
-                            return (a11 < a22)?1:-1;
-                    }
-                }
-            }
-            return -1;
-        }
-        else
-            return -1;//simply order as read by table.
+        return true;//simply order as read by table.
     }
 }
 
@@ -431,8 +400,16 @@ void Table::update_worklist(Schema& s)
         work_list.clear();
     }
 }
+std::map<int,int> Table::get_latest_position()
+{
+    std::map<int,int> m;
+    for(auto it: latest_message)
+        m[it.first] = it.second.origin_vertex;
+    return m;
+}
 void Table::state_update(Schema& s)
 {
+    latest_message[s.vehicle_id] = s;
     int ind = s.database_index;
     int* row = (anomaly_states + num_states*ind);
     int anomaly_flag = 0;
@@ -529,7 +506,7 @@ void Table::state_update(Schema& s)
     }
 }
 
-std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
+std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
 {
     //acquire a lock before writing? Mostly needed, can be a lock using mutex across both threads. 
     mtx.lock();
@@ -550,20 +527,30 @@ std::set<Schema,select_comparator> Table::select(SelectQuery* select_query)//par
             select_query
         );
     cudaDeviceSynchronize();
-    std::cout<<"Kernel Launch done!\n";
+    // std::cout<<"Kernel Launch done!\n";
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
     retArr = new Schema[size];
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
     cudaFree(selectedValues);
     mtx.unlock();
-    std::set<Schema,select_comparator> return_values(retArr, retArr+size,select_comparator(select_query));
-    int ms = std::max((int)(return_values.size()),select_query->limit_term);
-    std::cout<<return_values.size()<<" is the size of the set to be cut to "<<ms<<'\n';
-    while(return_values.size() > ms)
+    std::vector<Schema> v2;
+    std::set<Schema,select_comparator> return_values(v2.begin(),v2.end(),select_comparator(select_query));//absurd syntax!
+    std::vector<Schema> result;
+    int i = 0;
+    for(i = 0;i < size;i++)
+        return_values.insert(retArr[i]);//now in proper sorted order
+    int ms = (select_query->limit_term == 0)?(return_values.size()):(std::min((int)(return_values.size()),(int)select_query->limit_term));
+    i = 0;
+    for(auto it: return_values)
     {
-        return_values.erase(std::prev(return_values.end()));//remove the last few elements of the select query.
+        if(i == ms)
+        {
+            break;
+        }
+        result.push_back(it);
+        i++;
     }
-    return return_values;
+    return result;
 }
 
 void Table::PrintDatabase()

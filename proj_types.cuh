@@ -45,6 +45,8 @@ public:
     double distance;
     int origin_vertex;
     int destination_vertex;
+    __host__ __device__ Schema(const Schema&);//copy constructor
+    __host__ __device__ Schema& operator =(const Schema&);//overloaded assignment operator. 
     Schema();
     Schema(int);
 };
@@ -56,7 +58,7 @@ class Limits
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank.
-        double interval_between_messages = 0.1;//10 messages per second.
+        double interval_between_messages = 1;//10 messages per second.
         double speed_violation_time;//the number of contiguous status messages that indicate a fault.
         double brake_violation_time;
         double seatbelt_violation_time;
@@ -115,7 +117,7 @@ class select_comparator
         SelectQuery* select_query;//on host
     public:
         select_comparator(SelectQuery*);
-        int operator ()(const Schema&,const Schema&);
+        bool operator ()(const Schema&,const Schema&);//implements a strict weak ordering.
 };
 
 
@@ -129,19 +131,21 @@ private:
     int* anomaly_states;//This table is to track state transitions for anomaly detection.
     int num_states;//number of various anomaly states needed. 
     std::map<int,Schema> work_list;//stores a worklist of various queries to lazily update. State updates happen here.
+    std::map<int,Schema> latest_message;//stores the most recent message received from each car. 
     const int numberOfRows;
     int write_index;//which row has to be overwritten?
     int max_worklist_size;
     std::mutex mtx;
     Limits* l;
     void WriteRows();
+    void state_update(Schema&);
 
 public:
     void init_bt(int);
     Table(int,int,int);
     void update_worklist(Schema&);
-    void state_update(Schema&);
-    std::set<Schema,select_comparator> select(SelectQuery*);
+    std::vector<Schema> select(SelectQuery*);
+    std::map<int,int> get_latest_position();//gets the latest position of all cars.
     void PrintDatabase();
 };
 class GPSSystem{

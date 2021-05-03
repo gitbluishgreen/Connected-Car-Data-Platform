@@ -45,32 +45,14 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
             if(ptr[i])
                 participating_cars.insert((*car_map)[i]);
         }
-        SelectQuery* s;
-        cudaMallocHost((void**)&s,sizeof(Schema));
-        char* x;
-        cudaMallocHost((void**)&x,11*sizeof(char));
-        x[0] = 'v';
-        x[1] = 'e';
-        x[2] = 'h';
-        x[3] = 'i';
-        x[4] = 'c';
-        x[5] = 'l';
-        x[6] = 'e';
-        x[7] = '_';
-        x[8] = 'i';
-        x[9] = 'd';
-        s->select_columns = new std::vector<char*>();
-        s->distinct_query = true;//suffices to set this flag, now compare values of these columns.
-        s->select_columns->push_back(x);//select columns will be used by the comparator to display.
-        std::set<Schema,select_comparator> sx = t->select(s);//may have to be changed.
         /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
         between listener thread and action thread, since an arbitrary thread handles the signal.)*/
-        cudaFreeHost(s);
+        std::map<int,int> returned_details = t->get_latest_position();//gets latest position of all cars. Lock needed?
         std::map<int,int> car_details;
-        for(Schema o: sx)
+        for(auto it: returned_details)
         {
-            if(participating_cars.find(o.vehicle_id) != participating_cars.end())
-                car_details[o.vehicle_id] = o.origin_vertex;
+            if(participating_cars.find(it.first) != participating_cars.end())
+                car_details[it.first] = it.second;
         }
         gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
     }
@@ -87,6 +69,7 @@ void message_handler(int sig, siginfo_t* sig_details,void* context)
                 dropped_vertices.insert(i);//have to ensure that this does not have current position of the car itself!
         }
         //dropped vertices haveto be computed randomly. 
+        std::map<int,int> current_positions = t->get_latest_position();
         std::vector<int> path = gps_object->findGarageOrBunk(sending_car,x,dropped_vertices);
          /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
         between listener thread and action thread, since an arbitrary thread handles the signal.)*/
@@ -147,9 +130,10 @@ void show(SelectQuery* sq)
             for(auto it: *(sq->select_columns))
                 std::cout<<it<<' ';
         if(sq->aggregate_columns != NULL)
-            for(auto it: *(sq->aggregate_columns))
+            for(auto it: *(sq->aggregate_columns)){
                 std::cout<<"("<<it.first<<" "<<it.second<<"),";
-        //std::cout<<'\n';
+                std::cout<<'\n';
+            }
         std::cout<<sq->limit_term<<'\n';
         display(sq->select_expression,NULL);
         // Schema s1;
@@ -173,11 +157,11 @@ void query_resolver()
         if(s == "KILL")
             break;
         SelectQuery* sq = process_query(s);
-        //std::cout<<"Query:\n";
-        //show(sq);
-        //std::set<Schema,select_comparator> res = t->select(sq);
-        //std::cout<<"Return value is "<<res.size()<<'\n';
-        t->PrintDatabase();
+        std::cout<<"Query:\n";
+        show(sq);
+        std::vector<Schema> res = t->select(sq);
+        std::cout<<"Return value is "<<res.size()<<'\n';
+        //t->PrintDatabase();
     }
     inp.close();
 }
