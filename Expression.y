@@ -41,7 +41,7 @@
 %type <order_list> OrderExp ExpList
 %type <expression> Exp1 Exp2 Exp3 Exp Term WhereCondition GroupExp 
 %type <identifier> AggregateFunction Identifier
-%token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Distinct Where Order Group By Limit Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Count Sum Identifier Value
+%token Plus Minus Mult Div Modulo NotEqual DoubleEqual Greater GreaterEqual Lesser LesserEqual Or And Not Select Distinct Where Order Group By Limit Ascending Descending Comma OpeningBracket ClosingBracket Maximum Minimum Average Variance StandardDeviation Sum Identifier Value
 %%
 goal: Select_Query
 {
@@ -50,7 +50,6 @@ goal: Select_Query
 };
 Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 {
-
 	for(auto it: *$3)
 	{
 		if(!find_column(it))
@@ -63,11 +62,9 @@ Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 	$$->select_expression = $4;
 	$$->order_term = $5;
 	$$->limit_term = $6;
-	//std::cout<<"Reached Select_Query\n";
 }
 | Select AggCol WhereCondition GroupExp OrderExp LimitExp
 {
-	//std::cout<<"Hola, I've found aggcols!\n";
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));
 	std::reverse($2->begin(),$2->end());
 	$$->aggregate_columns = $2;
@@ -82,6 +79,7 @@ DistinctQualifier: Distinct
 	$$ = true;
 }
 | 
+
 /*empty*/
 {
 	$$ = false;
@@ -111,12 +109,10 @@ MultiCol: MultiCol Comma Identifier
 OrderCriteria: Ascending
 {
 	$$ = true;
-	//std::cout<<"Reached Order:Asc\n";
 }
 | Descending
 {
 	$$ = false;
-	//std::cout<<"Reached Order:desc\n";
 }
 |
 /*empty*/
@@ -127,7 +123,6 @@ WhereCondition:
  Where Exp
 {
 	$$ = $2;
-	//std::cout<<"Reached WhereCond\n";
 }
 |
 /*empty*/
@@ -137,7 +132,7 @@ WhereCondition:
 LimitExp: 
 Limit Value
 {
-	$$ = floor(yylval.value);
+	$$ = floor($2);
 }
 |
 /*empty*/
@@ -180,13 +175,6 @@ AggregateFunction: Maximum
 	$$[1] = 't';
 	$$[2] = 'd';
 }
-| Count
-{
-	cudaMallocHost((void**)&$$,4*sizeof(char));
-	$$[0] = 'c';
-	$$[1] = 'n';
-	$$[2] = 't';
-}
 | Sum
 {
 	cudaMallocHost((void**)&$$,4*sizeof(char));
@@ -197,13 +185,16 @@ AggregateFunction: Maximum
 AggCol: 
 AggregateFunction OpeningBracket Exp ClosingBracket MultiAggCol
 {
-	//std::cout<<"Aggcols ftw!\n";
 	$$ = $5;
+	if($3->type_of_expr == 1)
+		YYABORT;//no boolean values allowed.
 	$$->push_back(std::make_pair($1,$3));
 };
 MultiAggCol: MultiAggCol Comma AggregateFunction OpeningBracket Exp ClosingBracket
 {
 	$$ = $1;
+	if($5->type_of_expr == 1)
+		YYABORT;//no boolean value allowed.
 	$$->push_back(std::make_pair($3,$5));
 }
 |
@@ -247,7 +238,6 @@ Exp OrderCriteria
 
 Exp: Exp Or Exp1
 {
-	//std::cout<<"Reached Expression!\n";
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->exp_operator)),3 * sizeof(char));
 	$$->exp_operator[0] = 'o';
@@ -285,7 +275,6 @@ Exp: Exp Or Exp1
 }
 | Exp1
 {
-	//std::cout<<"Exp -> Exp1!\n";
 	$$=$1;
 };
 
@@ -406,7 +395,6 @@ Exp1: Exp1 Greater Exp2
 }
 | Exp2
 {
-	//std::cout<<"Exp1 -> Exp2!\n";
 	$$ = $1;
 };
 
@@ -441,7 +429,6 @@ Exp2: Exp2 Plus Exp3
 }
 | Exp3
 {
-	//std::cout<<"Exp2 -> Exp3!\n";
 	$$ = $1;
 };
 Exp3: Exp3 Mult Term
@@ -490,13 +477,11 @@ Exp3: Exp3 Mult Term
 |
 Term
 {
-	//std::cout<<"Exp3 -> Term\n";
 	$$ = $1;
 };
 
 Term: Identifier
 {
-	//std::cout<<"Term -> Identifier!\n";
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&($$->column_name)),sizeof(char)*(1+strlen($1)));
 	strcpy($$->column_name,$1);

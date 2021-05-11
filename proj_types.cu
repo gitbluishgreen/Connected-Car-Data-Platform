@@ -351,8 +351,8 @@ void Table::WriteRows()
     cudaMalloc((void**)&device_indices,num_mod_rows*sizeof(int));
     cudaMalloc((void**)&deviceRowsToBeModified,num_mod_rows*sizeof(Schema));
     int i = 0;
-    Schema* hostRowsToBeModified = new Schema[num_mod_rows];
-    int* hostIndicesToBeModified = new int[num_mod_rows];
+    Schema* hostRowsToBeModified = (Schema*)malloc(sizeof(Schema)*num_mod_rows);
+    int* hostIndicesToBeModified = (int*)malloc(sizeof(int)*num_mod_rows);
     for(std::pair<int,Schema> s: work_list)
     {
         hostRowsToBeModified[i] = s.second;
@@ -363,8 +363,6 @@ void Table::WriteRows()
     cudaMemcpy(device_indices,hostIndicesToBeModified,num_mod_rows*sizeof(int),cudaMemcpyHostToDevice);
     changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
     cudaDeviceSynchronize();
-    delete hostRowsToBeModified;
-    delete hostIndicesToBeModified;
 }
 
 void Table::init_bt(int num_threads)
@@ -374,15 +372,16 @@ void Table::init_bt(int num_threads)
 }
 
 Table::Table(
-    int numRows,int numberOfCars,int max_wl_size
+    int numRows,int numCars,int max_wl_size,int* rfd
 ):
-    numberOfRows(numRows), max_worklist_size(max_wl_size)
+    numberOfRows(numRows), numberOfCars(numCars),max_worklist_size(max_wl_size)
 {
+    request_file_descriptor = rfd;
     l = new Limits();
     cudaMalloc((void**)&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
     num_states = 10;
     write_index = 0;
-    anomaly_states = (int*)calloc(num_states * numberOfCars,sizeof(int));        
+    anomaly_states = (int*)calloc(num_states * numCars,sizeof(int));        
 }
 
 void Table::update_worklist(Schema& s)
@@ -413,11 +412,15 @@ void Table::state_update(Schema& s)
     int ind = s.database_index;
     int* row = (anomaly_states + num_states*ind);
     int anomaly_flag = 0;
+    bool b[10] = {false,false,false,false,false,false,false,false,false,false};
     if(s.oil_life_pct < l->min_oil_level)
     {
         row[0] = std::min(row[0]+1,(int)(l->oil_violation_time));
         if(row[0] == l->oil_violation_time)
+        {
             anomaly_flag |= 1;
+            b[0] = true;
+        }
     }
     else
         row[0] = 0;
@@ -425,7 +428,10 @@ void Table::state_update(Schema& s)
     {
         row[1] = std::min(row[1]+1,(int)(l->pressure_violation_time));
         if(row[1] == l->pressure_violation_time)
+        {
             anomaly_flag |= 1<<1;
+            b[1] = true;
+        }
     }
     else
         row[1] = 0;
@@ -433,7 +439,10 @@ void Table::state_update(Schema& s)
     {
         row[2] = std::min(row[1]+1,(int)(l->pressure_violation_time));
         if(row[2] == l->pressure_violation_time)
+        {
             anomaly_flag |= 1<<2;
+            b[2] = true;
+        }
     }
     else
         row[2] = 0;
@@ -441,7 +450,10 @@ void Table::state_update(Schema& s)
     {
         row[3] = std::min(row[1]+1,(int)(l->pressure_violation_time));
         if(row[3] == l->pressure_violation_time)
+        {
             anomaly_flag |= 1<<3;
+            b[3] = true;
+        }
     }
     else
         row[3] = 0;
@@ -449,7 +461,10 @@ void Table::state_update(Schema& s)
     {
         row[4] = std::min(row[1]+1,(int)(l->pressure_violation_time));
         if(row[4] == l->pressure_violation_time)
+        {
             anomaly_flag |= 1<<4;
+            b[4] = true;
+        }
     }
     else
         row[4] = 0;
@@ -457,7 +472,10 @@ void Table::state_update(Schema& s)
     {
         row[5] = std::min(row[5]+1,(int)(l->voltage_violation_time));
         if(row[5] == (int)(l->voltage_violation_time))
+        {
             anomaly_flag |= 1<<5;
+            b[5] = true;
+        }
     }
     else
         row[5] = 0;
@@ -465,7 +483,10 @@ void Table::state_update(Schema& s)
     {
         row[6] = std::min(row[6]+1,(int)(l->fuel_violation_time));
         if(row[6] == (int)(l->fuel_violation_time))
+        {
             anomaly_flag |= 1<<6;
+            b[6] = true;
+        }
     }
     else
         row[6] = 0;
@@ -473,7 +494,10 @@ void Table::state_update(Schema& s)
     {
         row[7] = std::min(row[7]+1,(int)(l->brake_violation_time));
         if(row[7] == (int)(l->brake_violation_time))
+        {
             anomaly_flag |= 1<<7;
+            b[7] = true;
+        }
     }
     else
         row[7] = 0;
@@ -481,7 +505,10 @@ void Table::state_update(Schema& s)
     {
         row[8] = std::min(row[8]+1,(int)(l->door_violation_time));
         if(row[8] == (int)(l->door_violation_time))
+        {
             anomaly_flag |= 1<<8;
+            b[8] = true;
+        }
     }
     else
         row[8] = 0;
@@ -489,26 +516,47 @@ void Table::state_update(Schema& s)
     {
         row[9] = std::min(row[9]+1,(int)(l->steer_violation_time));
         if(row[9] == (int)(l->steer_violation_time))
+        {
             anomaly_flag |= 1<<9;
+            b[9] = true;
+        }
     }
     if(anomaly_flag != 0)
     {
         char c[20];
         sprintf(c,"shm_1_%d",s.vehicle_id);
-        int fd = shm_open(c,O_CREAT | O_RDWR,0666);
-        sprintf(c,"shm_2_%d",s.vehicle_id);
-        int fd1 = shm_open(c,O_CREAT|O_RDWR,0666);
-        int* ptr = (int*)mmap(0,4,PROT_READ | PROT_WRITE, MAP_SHARED,fd,0);
-        int* ptr1 = (int*)mmap(0,4,PROT_READ|PROT_WRITE,MAP_SHARED,fd1,0);
-        *ptr1 = anomaly_flag;
-        *ptr = 1;//written, now send a signal to handle anomaly.
-        kill(SIGUSR1,s.vehicle_id); 
+        int fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,sizeof(int));
+        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = 1;
+        c[4] = '2';
+        fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,sizeof(int));
+        ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = anomaly_flag;
+        if(b[0] || b[1] || b[2] || b[3] || b[4] || b[5])
+        {
+            request_body rb;
+            rb.participating_ids.push_back(s.vehicle_id);//this car sent a request.
+            rb.request_type = 2;//garage request.
+            write(request_file_descriptor[1],&rb,sizeof(request_body));//this will take care of signalling and updating the rest.
+        }
+        else if(b[6])
+        {
+            request_body rb;
+            rb.participating_ids.push_back(s.vehicle_id);//this car sent a request.
+            rb.request_type = 3;//fuel request.
+            write(request_file_descriptor[1],&rb,sizeof(request_body));//this will take care of signalling and updating the rest.
+        }
+        else
+        {
+            kill(SIGUSR1,s.vehicle_id);//send a signal now itself. 
+        }   
     }
 }
 
-std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
+std::vector<Schema> Table::select(SelectQuery* select_query)
 {
-    //acquire a lock before writing? Mostly needed, can be a lock using mutex across both threads. 
     mtx.lock();
     Schema* selectedValues;
     int* endIndexSelectedValues;
@@ -516,9 +564,9 @@ std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query an
     int size;
     cudaMalloc((void**)&selectedValues, numberOfRows*sizeof(Schema));//row indices that were selected 
     cudaMalloc((void**)&endIndexSelectedValues, sizeof(int));
-    cudaMemset(endIndexSelectedValues,0,4);//set this value to zero.        
+    cudaMemset(endIndexSelectedValues,0,sizeof(int));//set this value to zero.        
     init_bt(numberOfRows);
-    //std::cout<<"Acquired lock, going for kernel launch!\n";
+    //std::cout<<"Acquired lock, going for kernel launch with "<<nb<<" "<<nt<<" and "<<numberOfRows<<" number of Rows!\n";
     selectKernel<<<nb, nt>>>(
             StateDatabase,
             numberOfRows,
@@ -527,9 +575,13 @@ std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query an
             select_query
         );
     cudaDeviceSynchronize();
-    // std::cout<<"Kernel Launch done!\n";
+    //std::cout<<"Kernel Launch done!\n";
     cudaMemcpy(&size, endIndexSelectedValues, sizeof(int), cudaMemcpyDeviceToHost);
-    retArr = new Schema[size];
+    if(size == 0){
+        std::vector<Schema> s1;
+        return s1;
+    }
+    retArr = (Schema*)malloc(sizeof(Schema)*size);
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
     cudaFree(selectedValues);
     mtx.unlock();
@@ -537,9 +589,11 @@ std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query an
     std::set<Schema,select_comparator> return_values(v2.begin(),v2.end(),select_comparator(select_query));//absurd syntax!
     std::vector<Schema> result;
     int i = 0;
+    //std::cout<<"I picked up "<<size<<"!\n";
     for(i = 0;i < size;i++)
         return_values.insert(retArr[i]);//now in proper sorted order
     int ms = (select_query->limit_term == 0)?(return_values.size()):(std::min((int)(return_values.size()),(int)select_query->limit_term));
+    //std::cout<<"Size is "<<return_values.size()<<" to be cut to "<<ms<<"!\n";
     i = 0;
     for(auto it: return_values)
     {
@@ -553,16 +607,350 @@ std::vector<Schema> Table::select(SelectQuery* select_query)//parse the query an
     return result;
 }
 
+std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> Table::aggregate_select(SelectQuery* select_query)
+{
+    std::vector<Schema> selected_rows = select(select_query);
+    //now proceed to process
+    std::vector<std::vector<std::pair<double,double>>> v1;
+    std::vector<std::string> s;
+    if(selected_rows.size() ==0)
+        return std::make_pair(v1,s);
+    if(select_query->group_term != NULL)
+    {
+        bool group_is_double = (select_query->group_term->type_of_expr == 3); 
+        for(std::pair<char*,ExpressionNode*> it: *(select_query->aggregate_columns))
+        {
+            std::vector<std::pair<double,double>> q;
+            s.push_back(it.first);
+            bool param_is_double;
+            if(str_equal(it.first,"max"))
+            {   
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,double> max_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    if(max_map.find(t) == max_map.end())
+                    {
+                        if(!param_is_double)
+                            max_map[t] = (double)it.second->evaluate_int_expression(obj);
+                        else
+                            max_map[t] = it.second->evaluate_double_expression(obj);
+                    }
+                    else
+                    {
+                        if(!param_is_double)
+                            max_map[t] = std::max(max_map[t],(double)it.second->evaluate_int_expression(obj));
+                        else
+                            max_map[t] = std::max(max_map[t],it.second->evaluate_double_expression(obj));
+                    } 
+                }
+                for(auto it: max_map)
+                    q.push_back(it);
+            }
+            else if(str_equal(it.first,"min"))
+            {
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,double> min_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    if(min_map.find(t) == min_map.end())
+                    {
+                        if(!param_is_double)
+                            min_map[t] = (double)it.second->evaluate_int_expression(obj);
+                        else
+                            min_map[t] = it.second->evaluate_double_expression(obj);
+                    }
+                    else
+                    {
+                        if(!param_is_double)
+                            min_map[t] = std::min(min_map[t],(double)it.second->evaluate_int_expression(obj));
+                        else
+                            min_map[t] = std::min(min_map[t],it.second->evaluate_double_expression(obj));
+                    } 
+                }
+                for(auto it: min_map)
+                    q.push_back(it);
+            }
+            else if(str_equal(it.first,"avg"))
+            {
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,double> sum_map;
+                std::map<double,int> count_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    if(sum_map.find(t) == sum_map.end())
+                    {
+                        if(!param_is_double)
+                        {
+                            sum_map[t] = (double)it.second->evaluate_int_expression(obj);
+                            count_map[t]++;
+                        }
+                        else
+                        {
+                            sum_map[t] = it.second->evaluate_double_expression(obj);
+                            count_map[t]++;
+                        }
+                    }
+                    else
+                    {
+                        if(!param_is_double)
+                        {
+                            sum_map[t] += (double)it.second->evaluate_int_expression(obj);
+                            count_map[t]++;
+                        }
+                        else
+                        {
+                            sum_map[t] += it.second->evaluate_double_expression(obj);
+                            count_map[t]++;
+                        }
+                    } 
+                }
+                for(auto it: sum_map)
+                {
+                    q.push_back(std::make_pair(it.first,it.second/count_map[it.first]));
+                }
+            }
+            else if(str_equal(it.first,"std"))
+            {
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,std::vector<double>> std_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    
+                    if(!param_is_double)
+                    {
+                        std_map[t].push_back((double)it.second->evaluate_int_expression(obj));
+                    }
+                    else
+                    {
+                        std_map[t].push_back(it.second->evaluate_double_expression(obj));
+                    }
+                }
+                for(auto it: std_map)
+                {
+                    double sum = 0;
+                    for(auto it1: it.second)
+                        sum += it1;
+                    sum /= it.second.size();
+                    double std_dev = 0;
+                    for(auto it1: it.second)
+                        std_dev += pow(it1-sum,2);
+                    std_dev = sqrt(std_dev/it.second.size());
+                    q.push_back(std::make_pair(it.first,std_dev));
+                }
+                //edit for standard dev
+            }
+            else if(str_equal(it.first,"var"))
+            {
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,std::vector<double>> std_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    
+                    if(!param_is_double)
+                    {
+                        std_map[t].push_back((double)it.second->evaluate_int_expression(obj));
+                    }
+                    else
+                    {
+                        std_map[t].push_back(it.second->evaluate_double_expression(obj));
+                    }
+                }
+                for(auto it: std_map)
+                {
+                    double sum = 0;
+                    for(auto it1: it.second)
+                        sum += it1;
+                    sum /= it.second.size();
+                    double std_dev = 0;
+                    for(auto it1: it.second)
+                        std_dev += pow(it1-sum,2);
+                    std_dev /= it.second.size();
+                    q.push_back(std::make_pair(it.first,std_dev));
+                }
+            }
+            else if(str_equal(it.first,"sum"))
+            {
+                param_is_double = (it.second->type_of_expr == 3);
+                std::map<double,double> sum_map;
+                for(Schema obj: selected_rows)
+                {
+                    double t;
+                    if(group_is_double)
+                        t = select_query->group_term->evaluate_double_expression(obj);
+                    else
+                        t = (double)select_query->group_term->evaluate_int_expression(obj);
+                    
+                    if(!param_is_double)
+                    {
+                        double u = (double)it.second->evaluate_int_expression(obj);
+                        sum_map[t] += u;
+                    }
+                    else
+                    {
+                        double u = it.second->evaluate_double_expression(obj);
+                        sum_map[t] += u;
+                    }
+                    
+                }
+                for(auto it: sum_map)
+                {
+                    q.push_back(it);
+                }
+            }
+            v1.push_back(q);
+        }
+        return std::make_pair(v1,s);
+    }
+    for(std::pair<char*,ExpressionNode*> it: *(select_query->aggregate_columns)){
+        std::vector<std::pair<double,double>> v_r;
+        s.push_back(it.first);
+        if(str_equal(it.first,"max"))
+        {
+            double maxi = 0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                maxi = std::max(maxi,x);
+            }
+            v_r.push_back(std::make_pair(0.0,maxi));
+        }
+        else if(str_equal(it.first,"min"))
+        {   
+            double mini = 0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                mini = std::min(mini,x);
+            }
+            v_r.push_back(std::make_pair(0.0,mini));
+        }
+        else if(str_equal(it.first,"avg"))
+        {
+            double avg = 0.0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                avg += x;
+            }
+            avg /= s.size();
+            v_r.push_back(std::make_pair(0.0,avg));
+        }
+        else if(str_equal(it.first,"sum"))
+        {
+            double sum = 0.0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                sum += x;
+            }
+            v_r.push_back(std::make_pair(0.0,sum));
+        }
+        else if(str_equal(it.first,"std"))
+        {
+            std::vector<double> v;
+            double sum = 0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                sum += x;
+                v.push_back(x);
+            }
+            sum /= selected_rows.size();
+            double var = 0;
+            for(auto it: v)
+                var += pow(it-sum,2);
+            var /= selected_rows.size();
+            v_r.push_back(std::make_pair(0.0,var));
+        }
+        else if(str_equal(it.first,"var"))
+        {
+            std::vector<double> v;
+            double sum = 0;
+            for(auto schema_object: selected_rows)
+            {
+                double x;
+                if(it.second->type_of_expr == 2)
+                    x = it.second->evaluate_int_expression(schema_object);
+                else
+                    x = it.second->evaluate_double_expression(schema_object);
+                sum += x;
+                v.push_back(x);
+            }
+            sum /= selected_rows.size();
+            double var = 0;
+            for(auto it: v)
+                var += pow(it-sum,2);
+            var /= selected_rows.size();
+            double std_dev = sqrt(var);
+            v_r.push_back(std::make_pair(0.0,std_dev));
+        }
+        v1.push_back(v_r);
+    }
+    return std::make_pair(v1,s);
+}
+
+std::vector<Schema> Table::normal_select(SelectQuery* select_query)//parse the query and filter out what's relevant. 
+{
+    //acquire a lock before writing? Mostly needed, can be a lock using mutex across both threads. 
+    return select(select_query);
+}
+
 void Table::PrintDatabase()
 {
     //iterate through the table and print out.
     mtx.lock();
-    Schema* arr = new Schema[numberOfRows];
+    Schema* arr = (Schema*)malloc(sizeof(Schema)*numberOfRows);
     cudaMemcpy(arr,StateDatabase,numberOfRows*sizeof(Schema),cudaMemcpyDeviceToHost);
-    printf("Printing Database now!\n");
+    std::cout<<"Printing Database now!\n";
     for(int i = 0;i < numberOfRows;i++)
     {
-        printf("Vehicle ID = %d\n",arr[i].vehicle_id);
+        std::cout<<"Vehicle ID = "<<arr[i].vehicle_id<<'\n';
     } 
     mtx.unlock();
 }
@@ -581,7 +969,7 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
     // Phase one, make a new device Adjacency Matrix using the old one and
     // the set of dropped vertices
     int numberOfDroppedVertices = setDroppedVertices.size();
-    int* hostDroppedVertices = new int[numberOfDroppedVertices];
+    int* hostDroppedVertices = (int*)malloc(sizeof(int)*numberOfDroppedVertices);
     int* deviceDroppedVertices;
     int* deviceAdjacencyMatrix;
     int idx = 0;
@@ -589,6 +977,8 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
     {
         hostDroppedVertices[idx++] = vertex;
     }
+    int fd = shm_open("adjacency_matrix",O_RDONLY,0666);
+    int* hostAdjacencyMatrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     cudaMalloc((void**)&deviceDroppedVertices, numberOfDroppedVertices*sizeof(int));
     cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&deviceAdjacencyMatrix, numberOfVertices*numberOfVertices*sizeof(int));
@@ -602,24 +992,23 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
         // Phase two, Implement Dijkstra:
         int  hostNumberOfUsedVertices = 0;
         int* minDistance;
-        int* hostMinDistance = new int;
+        int* hostMinDistance = (int*)malloc(sizeof(int));
         *hostMinDistance = INT_MAX;
         cudaMalloc(&minDistance, sizeof(int));        
         int* argMinVertex;
         cudaMalloc(&argMinVertex, sizeof(int));
-        
         int* deviceUsed;
-        int* hostUsed = new int[numberOfVertices];
+        int* hostUsed = (int*)malloc(numberOfVertices*sizeof(int));
         for(int i = 0; i < numberOfVertices; i++){
             hostUsed[i] = 0;
         }
         int* deviceDistance;
-        int* hostDistance = new int[numberOfVertices];
+        int* hostDistance = (int*)malloc(sizeof(int)*numberOfVertices);
         for(int i = 0; i < numberOfVertices; i ++){
             hostDistance[i] = ((i == source)?0:INT_MAX);
         }
         int* deviceParent;
-        int* hostParent = new int[numberOfVertices];
+        int* hostParent = (int*)malloc(numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceUsed, numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceDistance, numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceParent, numberOfVertices*sizeof(int));
@@ -663,7 +1052,7 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
 
 GPSSystem::GPSSystem(int numVert, int* initMat){
     numberOfVertices = numVert;
-    hostAdjacencyMatrix = new int[numberOfVertices*numberOfVertices];
+    hostAdjacencyMatrix = (int*)malloc(numberOfVertices*numberOfVertices*sizeof(int));
     for(int i = 0; i < numberOfVertices*numberOfVertices; i++){
         hostAdjacencyMatrix[i] = initMat[i];
 }
@@ -739,12 +1128,12 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
         ftruncate(fd,sizeof(int));
         int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = 2;
-        c[4] = 2;
+        c[4] = '3';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int));
         ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = path.size();
-        c[4] = 3;
+        c[4] = '4';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,path.size()*sizeof(int));
         ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
@@ -808,4 +1197,3 @@ __host__ __device__ bool str_equal(const char* s1, const char* s2)
     }
     return true;
 }
-

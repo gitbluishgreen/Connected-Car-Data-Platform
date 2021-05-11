@@ -9,6 +9,7 @@
 #include <thread>
 #include <set>
 #include <unistd.h>
+#include <stdlib.h>
 #include <cmath>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -58,7 +59,7 @@ class Limits
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank.
-        double interval_between_messages = 1;//10 messages per second.
+        double interval_between_messages = 0.1;//10 messages per second.
         double speed_violation_time;//the number of contiguous status messages that indicate a fault.
         double brake_violation_time;
         double seatbelt_violation_time;
@@ -73,7 +74,7 @@ class Limits
         double min_pressure = 30;//pounds per square inch
         double min_voltage = 13.7;//for a typical car, voltage while running is 13.7-14.7 volts
         double max_voltage = 14.7;
-        double max_pressure = 35;//max psi
+        double max_pressure = 35;//maxi psi
         double engine_temperature_max = 104.44;//typical engine temperatures are in the range 195-220 degrees Fahrenheit.
         double engine_temperature_min = 90.56;
         double min_oil_level = 0.4;//minimum admissible oil percentage
@@ -130,21 +131,25 @@ private:
     Schema* StateDatabase;//The table is represented by an object array. Primary keys are as intended.
     int* anomaly_states;//This table is to track state transitions for anomaly detection.
     int num_states;//number of various anomaly states needed. 
+    int* request_file_descriptor;//file descriptor for a correction request. 
     std::map<int,Schema> work_list;//stores a worklist of various queries to lazily update. State updates happen here.
     std::map<int,Schema> latest_message;//stores the most recent message received from each car. 
     const int numberOfRows;
+    const int numberOfCars;
     int write_index;//which row has to be overwritten?
     int max_worklist_size;
     std::mutex mtx;
     Limits* l;
     void WriteRows();
     void state_update(Schema&);
+    std::vector<Schema> select(SelectQuery*);
 
 public:
     void init_bt(int);
-    Table(int,int,int);
+    Table(int,int,int,int*);
     void update_worklist(Schema&);
-    std::vector<Schema> select(SelectQuery*);
+    std::vector<Schema> normal_select(SelectQuery*);
+    std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> aggregate_select(SelectQuery*);
     std::map<int,int> get_latest_position();//gets the latest position of all cars.
     void PrintDatabase();
 };
@@ -160,6 +165,12 @@ public:
     std::vector<int> PathFinder(int,int,std::set<int>&);
     void convoyNodeFinder(std::map<int,int>&);
     std::vector<int> findGarageOrBunk(int,int,std::set<int>&);
+};
+class request_body
+{
+public:
+   int request_type;
+   std::vector<int> participating_ids; 
 };
 
 __host__ __device__ bool str_equal(const char*,const char*);

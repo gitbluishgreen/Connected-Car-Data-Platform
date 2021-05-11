@@ -48,7 +48,6 @@ space "\t"|"\n"|"\r"|"\f"|" "
 "SUM" {return Sum;}
 "VARIANCE" {return Variance;}
 "STDDEV" {return StandardDeviation;}
-"COUNT" {return Count;}
 {identifier} {yylval.identifier = new char[1+strlen(yytext)]; strcpy(yylval.identifier,yytext); return Identifier;}
 %%
 

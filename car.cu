@@ -38,7 +38,7 @@ static struct sigaction sa1;
 void car_message_handler(int sig, siginfo_t* sig_details,void* context)
 {
     //handles the signal. Could be an anomaly signal from the master,convoy or communication message.
-    std::cout<<"I was pulled up by master! "<<pid<<"\n";
+    std::cout<<pid<<" was pulled up by master!\n";
     char c[20];
     sprintf(c,"shm_1_%d",pid);//primary shared memory used to decide the type of message.
     int* ptr;
@@ -119,7 +119,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);//read the array size first.
         int a_sz = *ptr;
-        sprintf(c,"shm_4_%d",pid);
+        c[4] = '4';
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4*a_sz,PROT_READ,MAP_SHARED,fd,0);
         path.resize(a_sz);
