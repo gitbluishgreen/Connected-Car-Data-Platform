@@ -1,4 +1,5 @@
 #include <string>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <iostream>
@@ -59,51 +60,49 @@ void display(ExpressionNode* curr_node,ExpressionNode* parent)
 
 void show_normal_query(const std::vector<Schema>& selected_rows,SelectQuery* select_query)
 {
-    for(char* it: *(select_query->select_columns))
-        std::cout<<it<<"\t";
-    std::cout<<'\n';
     for(Schema s: selected_rows)
     {
+        std::cout<<"{";
         for(char* it: *(select_query->select_columns))
         {
             if(str_equal(it,"vehicle_id"))
-                std::cout<<s.vehicle_id<<"\t";
+                std::cout<<"vehicle_id:"<<s.vehicle_id<<",";
             if(str_equal(it,"oil_life_pct"))
-                std::cout<<s.oil_life_pct<<"\t";
+                std::cout<<"oil_life_pct:"<<s.oil_life_pct<<",";
             if(str_equal(it,"tire_p_rl"))
-                std::cout<<s.tire_p_rl<<"\t";
+                std::cout<<"tire_p_rl:"<<s.tire_p_rl<<",";
             if(str_equal(it,"tire_p_rr"))
-                std::cout<<s.tire_p_rr<<"\t";
+                std::cout<<"tire_p_rr:"<<s.tire_p_rr<<",";
             if(str_equal(it,"tire_p_fl"))
-                std::cout<<s.tire_p_fl<<"\t";
+                std::cout<<"tire_p_fl:"<<s.tire_p_fl<<",";
             if(str_equal(it,"tire_p_fr"))
-                std::cout<<s.tire_p_fr<<"\t";
+                std::cout<<"tire_p_fr:"<<s.tire_p_fr<<",";
             if(str_equal(it,"batt_volt"))
-                std::cout<<s.batt_volt<<"\t";
+                std::cout<<"batt_volt:"<<s.batt_volt<<",";
             if(str_equal(it,"fuel_percentage"))
-                std::cout<<s.fuel_percentage<<"\t";
+                std::cout<<"fuel_percentage:"<<s.fuel_percentage<<",";
             if(str_equal(it,"accel"))
-                std::cout<<s.accel<<"\t";
+                std::cout<<"accel:"<<s.accel<<",";
             if(str_equal(it,"seatbelt"))
-                std::cout<<s.seatbelt<<"\t";
+                std::cout<<"seatbelt:"<<s.seatbelt<<",";
             if(str_equal(it,"hard_brake"))
-                std::cout<<s.hard_brake<<"\t";
+                std::cout<<"hard_brake:"<<s.hard_brake<<",";
             if(str_equal(it,"door_lock"))
-                std::cout<<s.door_lock<<"\t";
+                std::cout<<"door_lock:"<<s.door_lock<<",";
             if(str_equal(it,"clutch"))
-                std::cout<<s.clutch<<"\t";
+                std::cout<<"clutch:"<<s.clutch<<",";
             if(str_equal(it,"hard_steer"))
-                std::cout<<s.hard_steer<<"\t";
+                std::cout<<"hard_steer:"<<s.hard_steer<<",";
             if(str_equal(it,"speed"))
-                std::cout<<s.speed<<"\t";
+                std::cout<<"speed:"<<s.speed<<",";
             if(str_equal(it,"distance"))
-                std::cout<<s.distance<<"\t";
+                std::cout<<"distance:"<<s.distance<<",";
             if(str_equal(it,"origin_vertex"))
-                std::cout<<s.origin_vertex<<"\t";
+                std::cout<<"origin_vertex:"<<s.origin_vertex<<",";
             if(str_equal(it,"destination_vertex"))
-                std::cout<<s.destination_vertex<<"\t";
+                std::cout<<"destination_vertex:"<<s.destination_vertex<<",";
         }
-        std::cout<<"\n";
+        std::cout<<"}\n";
     }
 }
 
@@ -139,57 +138,51 @@ void show(SelectQuery* sq)
 
 void request_resolver(int* file_descriptor)
 {
-    request_body rb;
-    while(read(file_descriptor[0],&rb,sizeof(request_body)))
+    request_body* rb = new request_body(0,0);
+    while(read(file_descriptor[0],rb,sizeof(request_body)))
     {
-        int type_of_query = rb.request_type;
-        if(type_of_query == 1)
+    //fuel routing or garage
+        std::cout<<"Resolving garage request from "<<rb->sending_car<<'\n';
+        int fd = shm_open("vertex_type",O_RDONLY,0666);
+        ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
+        int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
+        int sending_car = rb->sending_car;//this car's pid. 
+        std::map<int,int> current_position = t->get_latest_position();
+        int curr_pos = current_position[sending_car];
+        std::set<int> dropped_vertices;
+        for(int i = 0;i < numberOfVertices;i++)
         {
-            //convoy request. Proceed to read the set of cars in the convoy, and resolve the same.
-            std::map<int,int> returned_details = t->get_latest_position();//gets latest position of all cars. Lock needed?
-            std::map<int,int> car_details;
-            for(int it: rb.participating_ids)
-            {
-                int x = car_map->find(it)->second;
-                car_details[x] = returned_details[x];
-            }
-            gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
+            double y = (double)rand();
+            if(y/RAND_MAX < 0.5 && type_array[i] == 1 && i != curr_pos)//adjust manually
+                dropped_vertices.insert(i);//have to ensure that this does not have current position of the car itself!
         }
-        else if(type_of_query == 2 || type_of_query == 3)
-        {
-            //fuel routing or garage
-            int sending_car = rb.participating_ids[0];//this car's pid. 
-            std::set<int> dropped_vertices;
-            for(int i = 0;i < numberOfVertices;i++)
-            {
-                double y = (double)rand();
-                if(y/RAND_MAX < 0.5)//adjust manually
-                    dropped_vertices.insert(i);//have to ensure that this does not have current position of the car itself!
-            }
-            //dropped vertices haveto be computed randomly. 
-            std::map<int,int> current_position = t->get_latest_position();
-            std::vector<int> path = gps_object->findGarageOrBunk(current_position[sending_car],type_of_query,dropped_vertices);
-            /*WARNING: Possible deadlock here, (if worklist is writing after acquiring lock, and signal comes in, deadlock occurs 
-            between listener thread and action thread, since an arbitrary thread handles the signal.)*/
-            char c[20];
-            sprintf(c,"shm_3_%d",sending_car);
-            int fd = shm_open(c,O_CREAT | O_RDWR, 0666);
-            ftruncate(fd,4);
-            int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-            *ptr = path.size();
-            c[4] = '4';
-            fd = shm_open(c,O_CREAT|O_RDWR,0666);
-            ftruncate(fd,sizeof(int)*path.size());
-            ptr = (int*)mmap(0,path.size(),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-            for(int i = 0;i < path.size();i++)
-                ptr[i] = path[i];
-            kill(SIGUSR1,sending_car);//send the updated path back to the end user.
-        }
+        close(fd);
+        //dropped vertices haveto be computed randomly. 
+        std::vector<int> path = gps_object->findGarageOrBunk(curr_pos,rb->request_type,dropped_vertices);
+        char c[20];
+        if(path.size() == 0)
+            continue;//don't send.
+        sprintf(c,"shm_3_%d",sending_car);
+        fd = shm_open(c,O_CREAT | O_RDWR, 0666);
+        ftruncate(fd,4);
+        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = path.size();
+        close(fd);
+        c[4] = '4';
+        fd = shm_open(c,O_CREAT|O_RDWR,0666);
+        ftruncate(fd,sizeof(int)*path.size());
+        ptr = (int*)mmap(0,path.size(),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        for(int i = 0;i < path.size();i++)
+            ptr[i] = path[i];
+        std::cout<<"\nSending a signal with:\n";
+        for(auto it: path)
+            std::cout<<it<<" ";
+        close(fd);
+        kill(sending_car,SIGUSR1);//send the updated path back to the end user.
     }
 }
 
-
-void query_resolver()
+void query_resolver(int* file_descriptor)//pipe to write to request resolver
 {
     sleep(3);
     std::string s;
@@ -199,21 +192,67 @@ void query_resolver()
     {
         if(s == "KILL")
             break;
-        SelectQuery* sq = process_query(s);
-        if(sq == NULL)
-            std::cout<<"Ill-formatted query!\n";
-        //show(sq);
-        if(sq->aggregate_columns != NULL)
+        else if(s.find("CONVOY",0) == 0)
         {
-            std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> v = t->aggregate_select(sq);
-            show_aggregate_query(v,sq);
+            //convoy query. Else, it's a select query.
+            std::stringstream inp_q(s);
+            inp_q>>s;//remove the word convoy
+            int car_cnt;
+            inp_q>>car_cnt;
+            bool fl = false;
+            std::vector<int> v;
+            if(car_cnt <= 0)
+                fl = true;
+            else
+            {
+                v.resize(car_cnt);
+            }
+            for(int i = 0;i < car_cnt;i++)
+            {
+                int y;
+                inp_q>>y;
+                if(y <= 0 || y > numberOfCars)
+                {
+                    fl = true;
+                    break;
+                }
+                v[i] = y;
+            }
+            if(fl)
+                continue;//rejected query.
+            
+            //convoy request. Proceed to read the set of cars in the convoy, and resolve the same.
+            std::cout<<"Convoy query!\n";
+            std::map<int,int> returned_details = t->get_latest_position();//gets latest position of all cars. Lock needed?
+            std::map<int,int> car_details;
+            for(int it: v)
+            {
+                std::cout<<it<<'\n';
+                int x = car_map->find(it)->second;
+                car_details[x] = returned_details[x];
+            }
+            gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
         }
         else
         {
-            std::vector<Schema> v = t->normal_select(sq);
-            show_normal_query(v,sq);
+            SelectQuery* sq = process_query(s);
+            if(sq == NULL){
+                std::cout<<"Ill-formatted query!\n";
+                continue;
+            }
+            //show(sq);
+            if(sq->aggregate_columns != NULL)
+            {
+                std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> v = t->aggregate_select(sq);
+                show_aggregate_query(v,sq);
+            }
+            else
+            {
+                std::vector<Schema> v = t->normal_select(sq);
+                show_normal_query(v,sq);
+            }
+            //t->PrintDatabase();
         }
-        //t->PrintDatabase();
     }
     inp.close();
 }
@@ -239,17 +278,19 @@ int main(int argc, char* argv[])
             if(hostAdjacencyMatrix[i*numberOfVertices+j] < 0) hostAdjacencyMatrix[i*numberOfVertices+j] = INT_MAX;
         }
     }
+    close(fd);
     car_map = new std::map<int,int>();
     fd = shm_open("vertex_type",O_CREAT|O_RDWR,0666);
     ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
     int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
     for(int i = 0;i < numberOfVertices;i++)
         input_file >> type_array[i];//1 for normal, 2 for fuel station, 3 for garage
+    close(fd);
     gps_object = new GPSSystem(numberOfVertices, hostAdjacencyMatrix);
     input_file.close();
     std::thread t1(initialize,numberOfCars,numberOfVertices,f,car_map);//creates and runs the cars.
     std::thread t2(listener,f);//listens for server messages.
-    std::thread t3(query_resolver);
+    std::thread t3(query_resolver,request_fd);
     std::thread t4(request_resolver,request_fd);
     t1.join();
     t2.join();

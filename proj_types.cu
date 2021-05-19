@@ -420,6 +420,7 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1;
             b[0] = true;
+            row[0] = 0;
         }
     }
     else
@@ -431,39 +432,43 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<1;
             b[1] = true;
+            row[1] = 0;
         }
     }
     else
         row[1] = 0;
     if(s.tire_p_rl < l->min_pressure)
     {
-        row[2] = std::min(row[1]+1,(int)(l->pressure_violation_time));
+        row[2] = std::min(row[2]+1,(int)(l->pressure_violation_time));
         if(row[2] == l->pressure_violation_time)
         {
             anomaly_flag |= 1<<2;
             b[2] = true;
+            row[2] = 0;
         }
     }
     else
         row[2] = 0;
     if(s.tire_p_rl < l->min_pressure)
     {
-        row[3] = std::min(row[1]+1,(int)(l->pressure_violation_time));
+        row[3] = std::min(row[3]+1,(int)(l->pressure_violation_time));
         if(row[3] == l->pressure_violation_time)
         {
             anomaly_flag |= 1<<3;
             b[3] = true;
+            row[3] = 0;
         }
     }
     else
         row[3] = 0;
     if(s.tire_p_rl < l->min_pressure)
     {
-        row[4] = std::min(row[1]+1,(int)(l->pressure_violation_time));
+        row[4] = std::min(row[4]+1,(int)(l->pressure_violation_time));
         if(row[4] == l->pressure_violation_time)
         {
             anomaly_flag |= 1<<4;
             b[4] = true;
+            row[4] = 0;
         }
     }
     else
@@ -475,6 +480,7 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<5;
             b[5] = true;
+            row[5] = 0;
         }
     }
     else
@@ -486,6 +492,7 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<6;
             b[6] = true;
+            row[6] = 0;
         }
     }
     else
@@ -497,6 +504,7 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<7;
             b[7] = true;
+            row[7] = 0;
         }
     }
     else
@@ -508,6 +516,7 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<8;
             b[8] = true;
+            row[8] = 0;
         }
     }
     else
@@ -519,38 +528,41 @@ void Table::state_update(Schema& s)
         {
             anomaly_flag |= 1<<9;
             b[9] = true;
+            row[9] = 0;
         }
     }
     if(anomaly_flag != 0)
     {
         char c[20];
+        //std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
+        for(int j=0;j<10;j++)
+            std::cout<<b[j];
+        std::cout<<'\n';
         sprintf(c,"shm_1_%d",s.vehicle_id);
         int fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int));
         int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = 1;
+        close(fd);
         c[4] = '2';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int));
         ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = anomaly_flag;
+        close(fd);//close file descriptor.
         if(b[0] || b[1] || b[2] || b[3] || b[4] || b[5])
         {
-            request_body rb;
-            rb.participating_ids.push_back(s.vehicle_id);//this car sent a request.
-            rb.request_type = 2;//garage request.
-            write(request_file_descriptor[1],&rb,sizeof(request_body));//this will take care of signalling and updating the rest.
+            request_body* rb = new request_body(2,s.vehicle_id);
+            write(request_file_descriptor[1],rb,sizeof(request_body));//this will take care of signalling and updating the rest.
         }
         else if(b[6])
         {
-            request_body rb;
-            rb.participating_ids.push_back(s.vehicle_id);//this car sent a request.
-            rb.request_type = 3;//fuel request.
-            write(request_file_descriptor[1],&rb,sizeof(request_body));//this will take care of signalling and updating the rest.
+            request_body* rb = new request_body(3,s.vehicle_id);
+            write(request_file_descriptor[1],rb,sizeof(request_body));//this will take care of signalling and updating the rest.
         }
         else
         {
-            kill(SIGUSR1,s.vehicle_id);//send a signal now itself. 
+            kill(s.vehicle_id,SIGUSR1);//send a signal now itself. 
         }   
     }
 }
@@ -979,6 +991,7 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
     }
     int fd = shm_open("adjacency_matrix",O_RDONLY,0666);
     int* hostAdjacencyMatrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
+    close(fd);
     cudaMalloc((void**)&deviceDroppedVertices, numberOfDroppedVertices*sizeof(int));
     cudaMemcpy(deviceDroppedVertices, hostDroppedVertices, numberOfDroppedVertices*sizeof(int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&deviceAdjacencyMatrix, numberOfVertices*numberOfVertices*sizeof(int));
@@ -1047,6 +1060,8 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
         }
     cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(hostDistance, deviceDistance, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+    for(auto it: setDroppedVertices)
+        std::cout<<"Dropping "<<it<<'\n';
     return std::make_pair(hostParent,hostDistance);
 }
 
@@ -1081,7 +1096,7 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
     //djikstras kernel call,and then cumulatively add those distances. Then check the city with least sum of 
     //distance and ask cars to converge there.
     int* sum_array;
-    cudaMalloc(&sum_array,numberOfVertices*sizeof(int));
+    cudaMalloc((void**)&sum_array,numberOfVertices*sizeof(int));
     init_bt(numberOfVertices);
     set_zero<<<nb,nt>>>(sum_array);
     cudaDeviceSynchronize();
@@ -1110,7 +1125,16 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
         addMatrix<<<nb,nt>>>(sum_array,p.second);
         cudaDeviceSynchronize();
     }
-    int min_index = thrust::min_element(thrust::device,sum_array,sum_array + numberOfVertices) - sum_array;
+    int dev_array[numberOfVertices];
+    cudaMemcpy(dev_array,sum_array,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+    for(int i = 0;i< numberOfVertices;i++) 
+        std::cout<<dev_array[i]<<": ";
+    int min_index = 0;
+    for(int i = 0;i < numberOfVertices;i++)
+    {
+        if(dev_array[i] < dev_array[min_index])
+            min_index = i;
+    }
     //now write to shared memory and send a signal to each car.
     for(std::pair<int,int> p: car_ids)//gives their respective current positions.
     {
@@ -1128,17 +1152,20 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
         ftruncate(fd,sizeof(int));
         int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = 2;
+        close(fd);
         c[4] = '3';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int));
         ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = path.size();
+        close(fd);
         c[4] = '4';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,path.size()*sizeof(int));
         ptr = (int*)mmap(0,path.size()*sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         for(int i = 0;i < path.size();i++)
             ptr[i] = path[i];
+        close(fd);
         kill(p.first,SIGUSR1);
         //update the path here by writing to shared memory. 
     }
@@ -1149,6 +1176,9 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
     int hostParent[numberOfVertices];
     int hostDistance[numberOfVertices];
     cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+    std::cout<<"Data is \n";
+    for(int i = 0;i < numberOfVertices;i++)
+        std::cout<<hostParent[i]<<" ";
     cudaMemcpy(hostDistance,value.second,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
     int fd = shm_open("vertex_type",O_RDONLY,0666);
     int* arr = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
@@ -1175,6 +1205,7 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
     }
     path.push_back(source);
     std::reverse(path.begin(), path.end());
+    close(fd);
     return path;
 }
 
@@ -1196,4 +1227,9 @@ __host__ __device__ bool str_equal(const char* s1, const char* s2)
             return false;
     }
     return true;
+}
+request_body::request_body(int type,int s_car)
+{
+    request_type = type;
+    sending_car = s_car;
 }

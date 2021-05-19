@@ -15,6 +15,7 @@
 std::mt19937 generator (123);
 std::uniform_real_distribution<double> distribution(0.0, 1.0);
 int write_fd;
+const double conversion_factor = 1/3600.0;
 int pid;
 int count = 0;
 //path[i] -> path[i+1]
@@ -48,9 +49,11 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
     {
         //type 1 message: correction request
         sprintf(c,"shm_2_%d",pid);
+        close(fd);
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4,PROT_READ,MAP_SHARED,fd,0);
         int x = *ptr;
+        close(fd);
         int c1[10];
         for(int i = 0;i < 10;i++)
         {
@@ -68,12 +71,14 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             int sz = *ptr;
+            close(fd);
             c[4] = '4';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sz*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             path.resize(sz);
             for(int i =0;i < sz;i++)
                 path[i] = ptr[i];
+            close(fd);
             origin_index = 0;
             destination_index = 1;
             increment_index = 1;
@@ -85,12 +90,14 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             int sz = *ptr;
+            close(fd);
             c[4] = '4';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sz*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             path.resize(sz);
             for(int i =0;i < sz;i++)
                 path[i] = ptr[i];
+            close(fd);
             origin_index = 0;
             destination_index = 1;
             increment_index = 1;
@@ -115,16 +122,19 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
     else if(*ptr == 2)
     {
         //convoy/garage/bunk request. This message informs the car of the coordinate it has to rerout to and what path to follow
+        close(fd);//earlier fd has to be closed, that's why segfault.....
         sprintf(c,"shm_3_%d",pid);
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);//read the array size first.
         int a_sz = *ptr;
+        close(fd);
         c[4] = '4';
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4*a_sz,PROT_READ,MAP_SHARED,fd,0);
         path.resize(a_sz);
         for(int i = 0;i < a_sz;i++)
             path[i] = ptr[i];
+        close(fd);
         origin_index = 0;
         destination_index = 1;
         increment_index = 1;
@@ -142,13 +152,13 @@ void run_state(int numberOfCars,int numberOfVertices)
     int fd = shm_open("adjacency_matrix",O_RDONLY,0666);
     adjacency_matrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     pid = getpid();
-    oil_level = limit_object->min_oil_level;
+    oil_level = 1.0;//start with full value.Reduces at a constant rate. 
     pressure_fl = limit_object->min_pressure;
     pressure_fr = limit_object->min_pressure;
     pressure_rl = limit_object->min_pressure;
     pressure_rr = limit_object->min_pressure;
     voltage = limit_object->min_voltage;
-    fuel_percentage = 1;//start with full tank. Use some draining rate based on speed.
+    fuel_percentage = 1.0;//start with full tank. Use some draining rate based on speed.
     origin_index = 0;
     destination_index = 1;
     distance_covered = 0;
@@ -161,12 +171,13 @@ void run_state(int numberOfCars,int numberOfVertices)
     while(true)
     {
         obj.database_index = count;
-        obj.oil_life_pct = limit_object->min_oil_level + (1-limit_object->min_oil_level)*distribution(generator);
         obj.tire_p_rl = pressure_rl + (limit_object->max_pressure - limit_object->min_pressure)*distribution(generator);
         obj.tire_p_rr = pressure_rr + (limit_object->max_pressure - limit_object->min_pressure)*distribution(generator);
         obj.tire_p_fl = pressure_fl + (limit_object->max_pressure - limit_object->min_pressure)*distribution(generator);
         obj.tire_p_fr = pressure_fr + (limit_object->max_pressure - limit_object->min_pressure)*distribution(generator);
         obj.batt_volt = voltage + (limit_object->max_voltage-limit_object->min_voltage)*distribution(generator);
+        obj.origin_vertex = path[origin_index];
+        obj.destination_vertex = path[destination_index];
         if(prev_speed < limit_object->max_speed * 0.9)
         {
             new_speed = prev_speed + distribution(generator)*2;
@@ -209,7 +220,8 @@ void run_state(int numberOfCars,int numberOfVertices)
             prev_gear = new_gear;
             prev_speed = new_speed;   
         }
-        distance_covered += limit_object->interval_between_messages*(prev_speed + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages);
+        double incremental_distance = limit_object->interval_between_messages*(prev_speed*conversion_factor + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages*conversion_factor);
+        distance_covered +=  incremental_distance;    
         if(distance_covered >= adjacency_matrix[numberOfCars*path[origin_index]+path[destination_index]])
         {
             origin_index = origin_index + increment_index;
@@ -230,8 +242,13 @@ void run_state(int numberOfCars,int numberOfVertices)
         obj.fuel_percentage = fuel_percentage - limit_object->interval_between_messages* new_speed/limit_object->mileage;
         obj.hard_brake = brake;
         obj.door_lock = door_lock;
+        oil_level -= incremental_distance*limit_object->oil_capacity;
+        //std::cout<<"Speed is "<<prev_speed<<" "<<new_speed<<"\n";
+        //std::cout<<"Oil level for "<<pid<<" is "<<oil_level<<" and distance is "<<incremental_distance<<'\n';
+        obj.oil_life_pct = oil_level;
         write(write_fd,&obj,sizeof(obj));
     }
+    close(fd);
 }
 
 void initialize(int numberOfCars,int numberOfVertices,int* file_descriptor,std::map<int,int>* car_map)

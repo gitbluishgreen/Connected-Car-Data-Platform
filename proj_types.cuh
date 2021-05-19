@@ -58,8 +58,9 @@ class Limits
     //this is actually the case by seeing if a contiguous number of such messages are actually received. One such
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
-        double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank.
+        double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank. Default = 1650
         double interval_between_messages = 0.1;//10 messages per second.
+        double oil_capacity = 0.0002071;//1/4827.9, decrease in oil_pct per km. (Assuming 3000 miles for full drain).
         double speed_violation_time;//the number of contiguous status messages that indicate a fault.
         double brake_violation_time;
         double seatbelt_violation_time;
@@ -77,7 +78,7 @@ class Limits
         double max_pressure = 35;//maxi psi
         double engine_temperature_max = 104.44;//typical engine temperatures are in the range 195-220 degrees Fahrenheit.
         double engine_temperature_min = 90.56;
-        double min_oil_level = 0.4;//minimum admissible oil percentage
+        double min_oil_level = 0.3;//minimum admissible oil percentage
         double min_fuel_percentage = 0.1;//minimum fuel percentage allowable 
         double brake_recovery_time = 2;//2 seconds to reaccelerate.
        	Limits();
@@ -170,7 +171,8 @@ class request_body
 {
 public:
    int request_type;
-   std::vector<int> participating_ids; 
+   int sending_car;
+   request_body(int,int);
 };
 
 __host__ __device__ bool str_equal(const char*,const char*);
