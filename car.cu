@@ -15,7 +15,7 @@
 std::mt19937 generator (123);
 std::uniform_real_distribution<double> distribution(0.0, 1.0);
 int write_fd;
-const double conversion_factor = 1/3600.0;
+const double conversion_factor = 1.0/3600.0;
 int pid;
 int count = 0;
 //path[i] -> path[i+1]
@@ -162,9 +162,12 @@ void run_state(int numberOfCars,int numberOfVertices)
     origin_index = 0;
     destination_index = 1;
     distance_covered = 0;
+    double total_distance_covered = 0;
     Schema obj(10);//object creation.
     obj.vehicle_id =  pid;
     double new_speed = 0.0;
+    struct timespec sleep_time;
+    struct timespec rem_time;
     path.resize(numberOfVertices);
     for(int i = 0;i < numberOfVertices;i++)
         path[i] = i;
@@ -221,9 +224,11 @@ void run_state(int numberOfCars,int numberOfVertices)
             prev_speed = new_speed;   
         }
         double incremental_distance = limit_object->interval_between_messages*(prev_speed*conversion_factor + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages*conversion_factor);
-        distance_covered +=  incremental_distance;    
+        distance_covered +=  incremental_distance;   
+        total_distance_covered += incremental_distance;
         if(distance_covered >= adjacency_matrix[numberOfCars*path[origin_index]+path[destination_index]])
         {
+            distance_covered = 0;
             origin_index = origin_index + increment_index;
             destination_index = destination_index + increment_index;
         }
@@ -239,14 +244,17 @@ void run_state(int numberOfCars,int numberOfVertices)
             origin_index = 0;
             destination_index = 1;
         }
-        obj.fuel_percentage = fuel_percentage - limit_object->interval_between_messages* new_speed/limit_object->mileage;
+        obj.fuel_percentage = fuel_percentage - limit_object->interval_between_messages*conversion_factor*new_speed/limit_object->mileage;
         obj.hard_brake = brake;
         obj.door_lock = door_lock;
-        oil_level -= incremental_distance*limit_object->oil_capacity;
-        //std::cout<<"Speed is "<<prev_speed<<" "<<new_speed<<"\n";
+        oil_level = 1.0 - distance_covered*limit_object->oil_capacity;
+        //std::cout<<"For "<<pid<<" Oil_life_pct is "<<oil_level<<" distance is "<<distance_covered<<" and incremental distance is "<<incremental_distance<<'\n';
         //std::cout<<"Oil level for "<<pid<<" is "<<oil_level<<" and distance is "<<incremental_distance<<'\n';
         obj.oil_life_pct = oil_level;
+        obj.distance = total_distance_covered;
         write(write_fd,&obj,sizeof(obj));
+        sleep_time.tv_nsec = (long)(1e9*limit_object->interval_between_messages);
+        nanosleep(&sleep_time,&rem_time);//interval between messages
     }
     close(fd);
 }

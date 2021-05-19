@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <chrono>
 #include <fstream>
 #include <cuda.h>
 #include <limits.h>
@@ -108,17 +109,15 @@ void show_normal_query(const std::vector<Schema>& selected_rows,SelectQuery* sel
 
 void show_aggregate_query(const std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>>& v,SelectQuery* select_query)
 {
-    for(std::string s: v.second)
-    {
-        std::cout<<s<<"\t";
-    }
-    int i = 0;
+    //std::cout<<"Hey,got here! "<<v.second.size()<<'\n';
+    int i = 0,j=0;
     for(i=0;i<v.first.size();i++)
     {
-        std::cout<<v.first[i][0].first<<":\t";
-        for(std::pair<double,double> p: v.first[i])
-            std::cout<<p.second<<"\t";
-        std::cout<<'\n';
+        std::cout<<v.second[i]<<":\t{";
+        int sz = v.first[i].size();
+        for(j=0;j<sz-1;j++)
+            std::cout<<"("<<v.first[i][j].first<<","<<v.first[i][j].second<<"),";
+        std::cout<<"("<<v.first[i][sz-1].first<<","<<v.first[i][sz-1].second<<")}\n";
     }
 }
 
@@ -184,7 +183,7 @@ void request_resolver(int* file_descriptor)
 
 void query_resolver(int* file_descriptor)//pipe to write to request resolver
 {
-    sleep(3);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     std::string s;
     std::ifstream inp;
     inp.open("query.txt",std::ifstream::in);
@@ -243,7 +242,9 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             //show(sq);
             if(sq->aggregate_columns != NULL)
             {
+                //std::cout<<"Fired this now!\n";
                 std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> v = t->aggregate_select(sq);
+                //std::cout<<"Taking my time here...\n";
                 show_aggregate_query(v,sq);
             }
             else

@@ -535,9 +535,9 @@ void Table::state_update(Schema& s)
     {
         char c[20];
         //std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
-        for(int j=0;j<10;j++)
-            std::cout<<b[j];
-        std::cout<<'\n';
+        // for(int j=0;j<10;j++)
+        //     std::cout<<b[j];
+        // std::cout<<'\n';
         sprintf(c,"shm_1_%d",s.vehicle_id);
         int fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int));
@@ -882,7 +882,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
                     x = it.second->evaluate_double_expression(schema_object);
                 avg += x;
             }
-            avg /= s.size();
+            avg /= selected_rows.size();
             v_r.push_back(std::make_pair(0.0,avg));
         }
         else if(str_equal(it.first,"sum"))
@@ -899,7 +899,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
             }
             v_r.push_back(std::make_pair(0.0,sum));
         }
-        else if(str_equal(it.first,"std"))
+        else if(str_equal(it.first,"var"))
         {
             std::vector<double> v;
             double sum = 0;
@@ -920,7 +920,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
             var /= selected_rows.size();
             v_r.push_back(std::make_pair(0.0,var));
         }
-        else if(str_equal(it.first,"var"))
+        else if(str_equal(it.first,"std"))
         {
             std::vector<double> v;
             double sum = 0;
