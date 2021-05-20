@@ -917,7 +917,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
         s.push_back(it.first);
         if(str_equal(it.first,"max"))
         {
-            double maxi = 0;
+            double maxi = -DBL_MAX;
             for(auto schema_object: selected_rows)
             {
                 double x;
@@ -931,7 +931,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
         }
         else if(str_equal(it.first,"min"))
         {   
-            double mini = 0;
+            double mini = DBL_MAX;
             for(auto schema_object: selected_rows)
             {
                 double x;

@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <limits.h>
+#include <float.h>
 #include <cuda.h>
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
