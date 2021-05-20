@@ -491,7 +491,7 @@ Term: Identifier
 | Value
 {
 	cudaMallocHost((void**)&$$,sizeof(ExpressionNode));
-	$$->value =$1;
+	$$->value = $1;
 	$$->type_of_expr =  (floor($1) == $1)?2:3;
 }
 | OpeningBracket Exp ClosingBracket

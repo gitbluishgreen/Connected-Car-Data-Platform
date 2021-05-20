@@ -57,7 +57,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4,PROT_READ,MAP_SHARED,fd,0);
         int x = *ptr;
-        std::cout<<"The anomaly flag was "<<x<<'\n';
+        //std::cout<<"The anomaly flag was "<<x<<'\n';
         close(fd);
         int c1[11];
         for(int i = 0;i <= 10;i++)
@@ -71,7 +71,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         if(c1[0] || c1[1] || c1[2] || c1[3] || c1[4] || c1[5])
         {
             //oil percentage low. Maintenance needed!
-            std::cout<<"Pressure or Oil anomaly got corrected!\n";
+            //std::cout<<"Pressure or Oil anomaly got corrected!\n";
             oil_level = 1.0;
             pressure_rl = pressure_rr = pressure_fl = pressure_fr = (limit_object->min_pressure+limit_object->max_pressure)/2.0;
             voltage = (limit_object->min_voltage + limit_object->max_voltage)/2.0;
@@ -93,7 +93,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         if(c1[6])
         {
-            std::cout<<"Fuel anomaly got corrected!\n";
+            //std::cout<<"Fuel anomaly got corrected!\n";
             fuel_percentage = 1.0;
             c[4] = '3';
             fd = shm_open(c,O_RDONLY,0666);
@@ -260,7 +260,7 @@ void initialize(int numberOfCars,int numberOfVertices,int* file_descriptor,std::
         pid = fork();
         if(pid < 0)
         {
-            std::cout<<"Error creating Car #"<<i<<'\n';
+            std::cout<<"Error while creating Car "<<i<<std::endl;
             return;
         }
         else if(pid == 0)
@@ -269,7 +269,8 @@ void initialize(int numberOfCars,int numberOfVertices,int* file_descriptor,std::
             sa1.sa_flags |= SA_SIGINFO;
             if(sigaction(SIGUSR1,&sa1,NULL) != 0)
             {
-                std::cout<<"Error while initializing the signal handler!\n";
+                std::cout<<"Error while initializing the signal handler!"<<std::endl;
+                exit(0);
             }
             run_state(numberOfCars,numberOfVertices);
             exit(0);

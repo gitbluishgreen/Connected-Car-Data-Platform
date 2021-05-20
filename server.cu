@@ -146,7 +146,7 @@ void request_resolver(int* file_descriptor)
     while(read(file_descriptor[0],rb,sizeof(request_body)))
     {
     //fuel routing or garage
-        std::cout<<"Resolving fuel or garage request from "<<rb->sending_car<<std::endl;
+        //std::cout<<"Resolving fuel or garage request from "<<rb->sending_car<<std::endl;
         int fd = shm_open("vertex_type",O_RDONLY,0666);
         ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
         int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
@@ -207,10 +207,9 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
     std::this_thread::sleep_for(std::chrono::seconds(3));
     std::string s;
     std::ifstream inp;
-    inp.open("query.txt",std::ifstream::in);
-    while(std::getline(inp,s))
+    //inp.open("query.txt",std::ifstream::in);
+    while(std::getline(std::cin,s))
     {
-        std::cout<<s<<'\n';
         if(s == "KILL")
             break;
         else if(s.find("CONVOY",0) == 0)
@@ -234,6 +233,8 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
                 inp_q>>y;
                 if(y <= 0 || y > numberOfCars)
                 {
+                    std::cout<<"Invalid input, as car "<<y<<" does not exist!"<<std::endl;
+                    std::cout<<"===================="<<std::endl;
                     fl = true;
                     break;
                 }
@@ -248,9 +249,18 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             std::map<int,int> car_details;
             for(int it: v)
             {
-                int x = car_map->find(it)->second;
+                if(car_map->find(it-1) == car_map->end())
+                {
+                    std::cout<<"Convoy Query rejected because car "<<it<<" is yet to either start or write to the database!"<<std::endl;
+                    std::cout<<"===================="<<std::endl;
+                    fl = true;
+                    break;
+                }
+                int x = car_map->find(it-1)->second;
                 car_details[x] = returned_details[x];
             }
+            if(fl)
+                continue;
             gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
             std::cout<<"===================="<<std::endl;
         }
@@ -260,6 +270,7 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             SelectQuery* sq = process_query(s);
             if(sq == NULL){
                 std::cout<<"Ill-formatted query!"<<std::endl;
+                std::cout<<"===================="<<std::endl;
                 continue;
             }
             //show(sq);
@@ -276,9 +287,9 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             std::cout<<"===================="<<std::endl;
             //t->PrintDatabase();
         }
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        //std::this_thread::sleep_for(std::chrono::seconds(5));
     }
-    std::cerr<<"Came here!\n";
+    //std::cerr<<"Came here!\n";
     inp.close();
 }
 

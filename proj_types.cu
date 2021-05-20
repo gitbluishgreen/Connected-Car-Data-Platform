@@ -134,8 +134,15 @@ __host__ __device__ double ExpressionNode::evaluate_double_expression(const Sche
     }
     else
     {
-        double a1 = left_hand_term->evaluate_double_expression(s);
-        double a2 = right_hand_term->evaluate_double_expression(s);
+        double a1,a2;
+        if(left_hand_term->type_of_expr == 3)
+            a1 = left_hand_term->evaluate_double_expression(s);
+        else
+            a1 = (double)left_hand_term->evaluate_int_expression(s);
+        if(right_hand_term->type_of_expr == 3)
+            a2 = right_hand_term->evaluate_double_expression(s);
+        else
+            a2 = (double)right_hand_term->evaluate_int_expression(s);
         if(str_equal(exp_operator,"plus"))
             return a1+a2;
         else if(str_equal(exp_operator,"minus"))
@@ -599,10 +606,10 @@ void Table::state_update(Schema& s)
     if(anomaly_flag != 0)
     {
         char c[20];
-        std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
-        for(int j=0;j<10;j++)
-            std::cout<<b[j];
-        std::cout<<'\n';
+        // std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
+        // for(int j=0;j<10;j++)
+        //     std::cout<<b[j];
+        // std::cout<<'\n';
         if(b[0] || b[1] || b[2] || b[3] || b[4] || b[5])
         {
             request_body* rb = new request_body(2,s.vehicle_id,anomaly_flag);
@@ -674,7 +681,7 @@ std::vector<Schema> Table::select(SelectQuery* select_query)
     }
     else
     {
-        for(int i =0;i < size;i++)
+        for(int i =0; i < size;i++)
             result.push_back(retArr[i]);
     }
     //std::cout<<"After distinct!"<<std::endl;
@@ -1187,6 +1194,7 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
         cudaDeviceSynchronize();
     }
     cudaFree(device_distances);
+    //std::cout<<"Yes, solved it!\n"<<std::endl;
     int min_index = thrust::min_element(thrust::device,sum_array,sum_array+numberOfVertices) - sum_array;
     //now write to shared memory and send a signal to each car.
     cudaFree(sum_array);
@@ -1201,9 +1209,9 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
             curr = parent_array[vertex_map[p.second]][curr];
         }
         std::reverse(path.begin(),path.end());
-        // std::cout<<"Path for "<<p.first<<": ";
-        // std::copy(path.begin(),path.end(),std::ostream_iterator<int>(std::cout," "));
-        // std::cout<<'\n';
+        std::cout<<"Path for "<<p.first<<": ";
+        std::copy(path.begin(),path.end(),std::ostream_iterator<int>(std::cout," "));
+        std::cout<<'\n';
         if(path.size() == 1)
             continue;
         char c[20];
@@ -1227,6 +1235,7 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
             ptr[i] = path[i];
         close(fd);
         kill(p.first,SIGUSR1);
+        //std::cout<<"Sending to "<<p.first<<std::endl;
         //update the path here by writing to shared memory. 
     }
 }

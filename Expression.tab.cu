@@ -1983,7 +1983,7 @@ yyreduce:
 #line 492 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
-	(yyval.expression)->value =(yyvsp[0].value);
+	(yyval.expression)->value = (yyvsp[0].value);
 	(yyval.expression)->type_of_expr =  (floor((yyvsp[0].value)) == (yyvsp[0].value))?2:3;
 }
 #line 1990 "Expression.tab.cpp" /* yacc.c:1646  */
