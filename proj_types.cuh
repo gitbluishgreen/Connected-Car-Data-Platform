@@ -58,6 +58,7 @@ class Limits
     //this is actually the case by seeing if a contiguous number of such messages are actually received. One such
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
+        double acceleration = 0.004;//typical accln of 4 ms^-2
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank. Default = 1650
         double interval_between_messages = 0.1;//10 messages per second.
         double oil_capacity = 0.0002071;//1/4827.9, decrease in oil_pct per km. (Assuming 3000 miles for full drain).
@@ -71,13 +72,13 @@ class Limits
         double steer_violaton_time;
         double voltage_violation_time;
         double steer_violation_time;
-        double max_speed = 100;
+        double max_speed = 200;
         double min_pressure = 30;//pounds per square inch
         double min_voltage = 13.7;//for a typical car, voltage while running is 13.7-14.7 volts
         double max_voltage = 14.7;
         double max_pressure = 35;//maxi psi
-        double engine_temperature_max = 104.44;//typical engine temperatures are in the range 195-220 degrees Fahrenheit.
-        double engine_temperature_min = 90.56;
+        //double engine_temperature_max = 104.44;//typical engine temperatures are in the range 195-220 degrees Fahrenheit.
+        //double engine_temperature_min = 90.56;
         double min_oil_level = 0.3;//minimum admissible oil percentage
         double min_fuel_percentage = 0.1;//minimum fuel percentage allowable 
         double brake_recovery_time = 2;//2 seconds to reaccelerate.

@@ -61,6 +61,7 @@ Limits::Limits()
     fuel_violation_time = 4/interval_between_messages;
     steer_violaton_time = 1/interval_between_messages;
     voltage_violation_time = 4/interval_between_messages;
+    speed_violation_time = 2/interval_between_messages;
 }
 __host__ __device__ ExpressionNode::ExpressionNode()
 {
@@ -277,7 +278,7 @@ bool distinct_comparator::operator ()(const Schema&s1, const Schema& s2)
             if(s1.vehicle_id == s2.vehicle_id)
                 continue;
             else
-                s1.vehicle_id < s2.vehicle_id;
+                return s1.vehicle_id < s2.vehicle_id;
         }
         else if(str_equal(*it,"origin_vertex"))
         {
@@ -413,6 +414,8 @@ void Table::WriteRows()
     cudaMemcpy(device_indices,hostIndicesToBeModified,num_mod_rows*sizeof(int),cudaMemcpyHostToDevice);
     changeRowsKernel<<<nb,nt>>>(num_mod_rows,device_indices,deviceRowsToBeModified,StateDatabase);
     cudaDeviceSynchronize();
+    cudaFree(deviceRowsToBeModified);
+    cudaFree(device_indices);
 }
 
 void Table::init_bt(int num_threads)
@@ -429,7 +432,7 @@ Table::Table(
     request_file_descriptor = rfd;
     l = new Limits();
     cudaMalloc((void**)&StateDatabase, numberOfRows*sizeof(Schema));//constant size of the table. This will be overwritten.
-    num_states = 10;
+    num_states = 11;
     write_index = 0;
     anomaly_states = (int*)calloc(num_states * numCars,sizeof(int));        
 }
@@ -462,7 +465,7 @@ void Table::state_update(Schema& s)
     int ind = s.database_index;
     int* row = (anomaly_states + num_states*ind);
     int anomaly_flag = 0;
-    bool b[10] = {false,false,false,false,false,false,false,false,false,false};
+    bool b[11] = {false,false,false,false,false,false,false,false,false,false,false};
     if(s.oil_life_pct < l->min_oil_level)
     {
         row[0] = std::min(row[0]+1,(int)(l->oil_violation_time));
@@ -559,26 +562,38 @@ void Table::state_update(Schema& s)
     }
     else
         row[7] = 0;
-    if(!s.door_lock)
+    if(s.speed > l->max_speed)
     {
-        row[8] = std::min(row[8]+1,(int)(l->door_violation_time));
-        if(row[8] == (int)(l->door_violation_time))
+        row[8] = std::min(row[8]+1,(int)l->speed_violation_time);
+        if(row[8] == (int)l->speed_violation_time)
         {
-            anomaly_flag |= (1<<8);
+            anomaly_flag |= (1 << 8);
             b[8] = true;
             row[8] = 0;
         }
     }
-    else
+    else 
         row[8] = 0;
-    if(s.hard_steer)
+    if(!s.door_lock)
     {
-        row[9] = std::min(row[9]+1,(int)(l->steer_violation_time));
-        if(row[9] == (int)(l->steer_violation_time))
+        row[9] = std::min(row[9]+1,(int)(l->door_violation_time));
+        if(row[9] == (int)(l->door_violation_time))
         {
             anomaly_flag |= (1<<9);
             b[9] = true;
             row[9] = 0;
+        }
+    }
+    else
+        row[9] = 0;
+    if(s.hard_steer)
+    {
+        row[10] = std::min(row[10]+1,(int)(l->steer_violation_time));
+        if(row[10] == (int)(l->steer_violation_time))
+        {
+            anomaly_flag |= (1<<10);
+            b[10] = true;
+            row[10] = 0;
         }
     }
     if(anomaly_flag != 0)
@@ -1110,6 +1125,10 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
         }
     cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(hostDistance, deviceDistance, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
+    cudaFree(deviceDistance);
+    cudaFree(deviceParent);
+    cudaFree(deviceAdjacencyMatrix);
+    cudaFree(deviceUsed);
     // for(auto it: setDroppedVertices)
     //     std::cout<<"Dropping "<<it<<'\n';
     return std::make_pair(hostParent,hostDistance);
@@ -1150,27 +1169,34 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
     std::vector<int*> parent_array;
     std::pair<int*,int*> p;
     init_bt(numberOfVertices);
-    std::cout<<included_vertices.size()<<"\n";
+    //std::cout<<included_vertices.size()<<"\n";
     int* device_distances;
     cudaMalloc((void**)&device_distances,numberOfVertices*sizeof(int));
+    std::map<int,int> vertex_map;
+    int count = 0;
     for(int i: included_vertices)
     {   
+        vertex_map[i] = count;
+        count++;
         p = djikstra_result(i,droppedVertices);
         parent_array.push_back(p.first);
         cudaMemcpy(device_distances,p.second,numberOfVertices*sizeof(int),cudaMemcpyHostToDevice);
         addMatrix<<<nb,nt>>>(sum_array,device_distances);
         cudaDeviceSynchronize();
     }
+    cudaFree(device_distances);
     int min_index = thrust::min_element(thrust::device,sum_array,sum_array+numberOfVertices) - sum_array;
     //now write to shared memory and send a signal to each car.
+    cudaFree(sum_array);
     for(std::pair<int,int> p: car_ids)//gives their respective current positions.
     {
         std::vector<int> path;
         int curr = min_index;
         while(curr != -1)
         {
+            //std::cout<<curr<<'\n';
             path.push_back(curr);
-            curr = parent_array[p.second][curr];
+            curr = parent_array[vertex_map[p.second]][curr];
         }
         std::reverse(path.begin(),path.end());
         std::cout<<"Path for "<<p.first<<": ";
@@ -1211,18 +1237,7 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
     int fd = shm_open("vertex_type",O_RDONLY,0666);
     int* arr = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     int min_dist = INT_MAX;
-    int path_v = -1;
-    for(int i = 0;i < numberOfVertices;i++)
-    {
-        if(arr[i] == target_type)
-        {
-            if(hostDistance[i] < min_dist)
-            {
-                min_dist = hostDistance[i];
-                path_v = i;
-            }
-        }
-    }
+    int path_v = thrust::min_element(thrust::host,hostDistance,hostDistance + numberOfVertices) - hostDistance;
     std::vector<int> path;
     if(min_dist == INT_MAX)
         return path;
@@ -1232,12 +1247,12 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
         currentVertex = hostParent[currentVertex];
     }
     std::reverse(path.begin(), path.end());
-    for(int i = 0;i < numberOfVertices;i++)
-        std::cout<<hostParent[i]<<' ';
-    std::cout<<"\n";
-    for(int it: path)
-        std::cout<<it<<" ";
-    std::cout<<'\n';
+    // for(int i = 0;i < numberOfVertices;i++)
+    //     std::cout<<hostParent[i]<<' ';
+    // std::cout<<"\n";
+    // for(int it: path)
+    //     std::cout<<it<<" ";
+    // std::cout<<'\n';
     close(fd);
     return path;
 }

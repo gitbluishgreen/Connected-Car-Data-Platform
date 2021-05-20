@@ -64,46 +64,51 @@ void show_normal_query(const std::vector<Schema>& selected_rows,SelectQuery* sel
     for(Schema s: selected_rows)
     {
         std::cout<<"{";
-        for(char* it: *(select_query->select_columns))
+        int ind = 0;
+        for(ind = 0;ind+1 <= select_query->select_columns->size(); ind++)
         {
+            char* it = select_query->select_columns->at(ind);
             if(str_equal(it,"vehicle_id"))
-                std::cout<<"vehicle_id:"<<s.vehicle_id<<",";
+                std::cout<<"vehicle_id:"<<s.vehicle_id;
             if(str_equal(it,"oil_life_pct"))
-                std::cout<<"oil_life_pct:"<<s.oil_life_pct<<",";
+                std::cout<<"oil_life_pct:"<<s.oil_life_pct;
             if(str_equal(it,"tire_p_rl"))
-                std::cout<<"tire_p_rl:"<<s.tire_p_rl<<",";
+                std::cout<<"tire_p_rl:"<<s.tire_p_rl;
             if(str_equal(it,"tire_p_rr"))
-                std::cout<<"tire_p_rr:"<<s.tire_p_rr<<",";
+                std::cout<<"tire_p_rr:"<<s.tire_p_rr;
             if(str_equal(it,"tire_p_fl"))
-                std::cout<<"tire_p_fl:"<<s.tire_p_fl<<",";
+                std::cout<<"tire_p_fl:"<<s.tire_p_fl;
             if(str_equal(it,"tire_p_fr"))
-                std::cout<<"tire_p_fr:"<<s.tire_p_fr<<",";
+                std::cout<<"tire_p_fr:"<<s.tire_p_fr;
             if(str_equal(it,"batt_volt"))
-                std::cout<<"batt_volt:"<<s.batt_volt<<",";
+                std::cout<<"batt_volt:"<<s.batt_volt;
             if(str_equal(it,"fuel_percentage"))
-                std::cout<<"fuel_percentage:"<<s.fuel_percentage<<",";
+                std::cout<<"fuel_percentage:"<<s.fuel_percentage;
             if(str_equal(it,"accel"))
-                std::cout<<"accel:"<<s.accel<<",";
+                std::cout<<"accel:"<<s.accel;
             if(str_equal(it,"seatbelt"))
-                std::cout<<"seatbelt:"<<s.seatbelt<<",";
+                std::cout<<"seatbelt:"<<s.seatbelt;
             if(str_equal(it,"hard_brake"))
-                std::cout<<"hard_brake:"<<s.hard_brake<<",";
+                std::cout<<"hard_brake:"<<s.hard_brake;
             if(str_equal(it,"door_lock"))
-                std::cout<<"door_lock:"<<s.door_lock<<",";
+                std::cout<<"door_lock:"<<s.door_lock;
             if(str_equal(it,"clutch"))
-                std::cout<<"clutch:"<<s.clutch<<",";
+                std::cout<<"clutch:"<<s.clutch;
             if(str_equal(it,"hard_steer"))
-                std::cout<<"hard_steer:"<<s.hard_steer<<",";
+                std::cout<<"hard_steer:"<<s.hard_steer;
             if(str_equal(it,"speed"))
-                std::cout<<"speed:"<<s.speed<<",";
+                std::cout<<"speed:"<<s.speed;
             if(str_equal(it,"distance"))
-                std::cout<<"distance:"<<s.distance<<",";
+                std::cout<<"distance:"<<s.distance;
             if(str_equal(it,"origin_vertex"))
-                std::cout<<"origin_vertex:"<<s.origin_vertex<<",";
+                std::cout<<"origin_vertex:"<<s.origin_vertex;
             if(str_equal(it,"destination_vertex"))
-                std::cout<<"destination_vertex:"<<s.destination_vertex<<",";
+                std::cout<<"destination_vertex:"<<s.destination_vertex;
+            if(ind + 1 < select_query->select_columns->size())
+                std::cout<<",";
+            else
+                std::cout<<"}\n";
         }
-        std::cout<<"}\n";
     }
 }
 
@@ -239,7 +244,6 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             std::map<int,int> car_details;
             for(int it: v)
             {
-                std::cout<<it<<'\n';
                 int x = car_map->find(it)->second;
                 car_details[x] = returned_details[x];
             }

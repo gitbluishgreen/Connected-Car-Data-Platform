@@ -67,6 +67,7 @@ Select_Query: Select DistinctQualifier Columns WhereCondition OrderExp LimitExp
 {
 	cudaMallocHost((void**)&$$,sizeof(SelectQuery));
 	std::reverse($2->begin(),$2->end());
+	$$->distinct = false;
 	$$->aggregate_columns = $2;
 	$$->select_expression =  $3;
 	$$->group_term = $4;

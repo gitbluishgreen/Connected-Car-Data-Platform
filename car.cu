@@ -1,7 +1,8 @@
+#include "proj_types.cuh"
 #include <unistd.h>
 #include <limits.h>
 #include <iostream>
-#include "proj_types.cuh"
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/shm.h>
 #include <fcntl.h>
@@ -29,6 +30,8 @@ double pressure_fl;
 double voltage;
 double fuel_percentage;
 double distance_covered;
+double prev_speed = 0.0;
+double new_speed = 0.0;
 bool brake = false;
 bool door_lock = true;
 int origin_index;
@@ -60,12 +63,13 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
             int t = x>>i;
             c1[i] = t&1;
         }
-        for(int i = 9;i >= 0;i--)
-            std::cout<<c1[i];
-        std::cout<<'\n';
+        // for(int i = 9;i >= 0;i--)
+        //     std::cout<<c1[i];
+        // std::cout<<'\n';
         if(c1[0] || c1[1] || c1[2] || c1[3] || c1[4] || c1[5])
         {
             //oil percentage low. Maintenance needed!
+            std::cout<<"Pressure or Oil anomaly got corrected!\n";
             oil_level = 1.0;
             pressure_rl = pressure_rr = pressure_fl = pressure_fr = (limit_object->min_pressure+limit_object->max_pressure)/2.0;
             voltage = (limit_object->min_voltage + limit_object->max_voltage)/2.0;
@@ -87,7 +91,7 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         if(c1[6])
         {
-            std::cout<<"Fuel percentage got corrected!\n";
+            std::cout<<"Fuel anomaly got corrected!\n";
             fuel_percentage = 1.0;
             c[4] = '3';
             fd = shm_open(c,O_RDONLY,0666);
@@ -107,16 +111,20 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         if(c1[7])
         {
-            //brakes have been hit.
+            //speed violation
             brake = false;
             sleep(limit_object->brake_recovery_time);//within this much time, it returns to the original speed.
         }
         if(c1[8])
         {
+            new_speed =  (limit_object->max_speed) * 0.9;//90% of max speed.
+        }
+        if(c1[9])
+        {
             //lock the door.
             door_lock = true;
         }
-        if(c1[9])
+        if(c1[10])
         {
             //hard steer, path gets reversed?
             increment_index = increment_index * -1;//path is reversed now.
@@ -150,7 +158,6 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
 }
 void run_state(int numberOfCars,int numberOfVertices)
 {
-    double prev_speed = 0.0;//starting from scratch
     int prev_gear = 0;
     int fd = shm_open("adjacency_matrix",O_RDONLY,0666);
     adjacency_matrix = (int*)mmap(0,numberOfVertices*numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
@@ -168,12 +175,12 @@ void run_state(int numberOfCars,int numberOfVertices)
     double total_distance_covered = 0;
     Schema obj(10);//object creation.
     obj.vehicle_id =  pid;
-    double new_speed = 0.0;
     struct timespec sleep_time;
     struct timespec rem_time;
     path.resize(numberOfVertices);
     for(int i = 0;i < numberOfVertices;i++)
         path[i] = i;
+    std::random_shuffle(path.begin(),path.end());
     while(true)
     {
         obj.database_index = count;
@@ -184,48 +191,24 @@ void run_state(int numberOfCars,int numberOfVertices)
         obj.batt_volt = voltage + (limit_object->max_voltage-limit_object->min_voltage)*distribution(generator);
         obj.origin_vertex = path[origin_index];
         obj.destination_vertex = path[destination_index];
-        if(prev_speed < limit_object->max_speed * 0.9)
-        {
-            new_speed = prev_speed + distribution(generator)*2;
-            int new_gear;
-            if(new_speed < 10)
-                new_gear = 1;
-            else if(new_speed < 30)
-                new_gear = 2;
-            else if(new_speed < 50)
-                new_gear = 3;
-            else if(new_speed < 70)
-                new_gear = 4;
-            else
-                new_gear = 5;
-            obj.gear_toggle = (prev_gear != new_gear);
-            obj.clutch = (prev_gear != new_gear); 
-            obj.speed = new_speed;
-            obj.accel = true;
-            prev_gear = new_gear;
-            prev_speed = new_speed;
-        }
+        new_speed = prev_speed + limit_object->acceleration*limit_object->interval_between_messages*conversion_factor;
+        int new_gear;
+        if(new_speed < 10)
+            new_gear = 1;
+        else if(new_speed < 30)
+            new_gear = 2;
+        else if(new_speed < 50)
+            new_gear = 3;
+        else if(new_speed < 70)
+            new_gear = 4;
         else
-        {
-            new_speed = prev_speed - distribution(generator)*2;
-            int new_gear;
-            if(new_speed < 10)
-                new_gear = 1;
-            else if(new_speed < 30)
-                new_gear = 2;
-            else if(new_speed < 50)
-                new_gear = 3;
-            else if(new_speed < 70)
-                new_gear = 4;
-            else
-                new_gear = 5;
-            obj.gear_toggle = (prev_gear != new_gear);
-            obj.clutch = (prev_gear != new_gear); 
-            obj.speed = new_speed;
-            obj.accel = true;
-            prev_gear = new_gear;
-            prev_speed = new_speed;   
-        }
+            new_gear = 5;
+        obj.gear_toggle = (prev_gear != new_gear);
+        obj.clutch = (prev_gear != new_gear); 
+        obj.speed = new_speed;
+        obj.accel = true;
+        prev_gear = new_gear;
+        prev_speed = new_speed;
         double incremental_distance = limit_object->interval_between_messages*(prev_speed*conversion_factor + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages*conversion_factor);
         distance_covered +=  incremental_distance;   
         total_distance_covered += incremental_distance;

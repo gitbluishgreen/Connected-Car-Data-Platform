@@ -527,12 +527,12 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    46,    46,    51,    66,    77,    84,    88,    94,    99,
-     106,   109,   113,   119,   123,   129,   133,   139,   143,   150,
-     157,   164,   171,   178,   186,   193,   202,   206,   212,   217,
-     223,   227,   233,   239,   251,   264,   276,   281,   298,   314,
-     336,   357,   378,   396,   401,   415,   430,   434,   448,   461,
-     478,   483,   490,   496
+       0,    46,    46,    51,    66,    78,    85,    89,    95,   100,
+     107,   110,   114,   120,   124,   130,   134,   140,   144,   151,
+     158,   165,   172,   179,   187,   194,   203,   207,   213,   218,
+     224,   228,   234,   240,   252,   265,   277,   282,   299,   315,
+     337,   358,   379,   397,   402,   416,   431,   435,   449,   462,
+     479,   484,   491,   497
 };
 #endif
 
@@ -1393,270 +1393,271 @@ yyreduce:
     {
 	cudaMallocHost((void**)&(yyval.SelectObject),sizeof(SelectQuery));
 	std::reverse((yyvsp[-4].expression_list)->begin(),(yyvsp[-4].expression_list)->end());
+	(yyval.SelectObject)->distinct = false;
 	(yyval.SelectObject)->aggregate_columns = (yyvsp[-4].expression_list);
 	(yyval.SelectObject)->select_expression =  (yyvsp[-3].expression);
 	(yyval.SelectObject)->group_term = (yyvsp[-2].expression);
 	(yyval.SelectObject)->order_term = (yyvsp[-1].order_list);
 	(yyval.SelectObject)->limit_term = (yyvsp[0].value);  
 }
-#line 1403 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1404 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 78 "Expression.y" /* yacc.c:1646  */
+#line 79 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.distinct) = true;
 }
-#line 1411 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1412 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 84 "Expression.y" /* yacc.c:1646  */
+#line 85 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.distinct) = false;
 }
-#line 1419 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1420 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 89 "Expression.y" /* yacc.c:1646  */
+#line 90 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.name_list) = (yyvsp[0].name_list);
 	(yyval.name_list)->push_back((yyvsp[-1].identifier));
 }
-#line 1428 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1429 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 95 "Expression.y" /* yacc.c:1646  */
+#line 96 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.name_list) = new std::vector<char*>();
 	update_columns((yyval.name_list));
 }
-#line 1437 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1438 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 100 "Expression.y" /* yacc.c:1646  */
+#line 101 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.name_list) = (yyvsp[-2].name_list);
 	(yyval.name_list)->push_back((yyvsp[0].identifier));
 }
-#line 1446 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1447 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 106 "Expression.y" /* yacc.c:1646  */
+#line 107 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.name_list) = new std::vector<char*>();
 }
-#line 1454 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1455 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 110 "Expression.y" /* yacc.c:1646  */
+#line 111 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.distinct) = true;
 }
-#line 1462 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1463 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 114 "Expression.y" /* yacc.c:1646  */
+#line 115 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.distinct) = false;
 }
-#line 1470 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1471 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 119 "Expression.y" /* yacc.c:1646  */
+#line 120 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.distinct) = true;
 }
-#line 1478 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1479 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 124 "Expression.y" /* yacc.c:1646  */
+#line 125 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[0].expression);
 }
-#line 1486 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1487 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 129 "Expression.y" /* yacc.c:1646  */
+#line 130 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = NULL;
 }
-#line 1494 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1495 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 134 "Expression.y" /* yacc.c:1646  */
+#line 135 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.value) = floor((yyvsp[0].value));
 }
-#line 1502 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1503 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 139 "Expression.y" /* yacc.c:1646  */
+#line 140 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.value) = -1;
 }
-#line 1510 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1511 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 144 "Expression.y" /* yacc.c:1646  */
+#line 145 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 'm';
 	(yyval.identifier)[1] = 'a';
 	(yyval.identifier)[2] = 'x';
 }
-#line 1521 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1522 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 151 "Expression.y" /* yacc.c:1646  */
+#line 152 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 'm';
 	(yyval.identifier)[1] = 'i';
 	(yyval.identifier)[2] = 'n';
 }
-#line 1532 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1533 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 158 "Expression.y" /* yacc.c:1646  */
+#line 159 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 'a';
 	(yyval.identifier)[1] = 'v';
 	(yyval.identifier)[2] = 'g';
 }
-#line 1543 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1544 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 165 "Expression.y" /* yacc.c:1646  */
+#line 166 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 'v';
 	(yyval.identifier)[1] = 'a';
 	(yyval.identifier)[2] = 'r';
 }
-#line 1554 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1555 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 172 "Expression.y" /* yacc.c:1646  */
+#line 173 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 's';
 	(yyval.identifier)[1] = 't';
 	(yyval.identifier)[2] = 'd';
 }
-#line 1565 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1566 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 179 "Expression.y" /* yacc.c:1646  */
+#line 180 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.identifier),4*sizeof(char));
 	(yyval.identifier)[0] = 's';
 	(yyval.identifier)[1] = 'u';
 	(yyval.identifier)[2] = 'm';
 }
-#line 1576 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1577 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 187 "Expression.y" /* yacc.c:1646  */
+#line 188 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression_list) = (yyvsp[0].expression_list);
 	if((yyvsp[-2].expression)->type_of_expr == 1)
 		YYABORT;//no boolean values allowed.
 	(yyval.expression_list)->push_back(std::make_pair((yyvsp[-4].identifier),(yyvsp[-2].expression)));
 }
-#line 1587 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1588 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 194 "Expression.y" /* yacc.c:1646  */
+#line 195 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression_list) = (yyvsp[-5].expression_list);
 	if((yyvsp[-1].expression)->type_of_expr == 1)
 		YYABORT;//no boolean value allowed.
 	(yyval.expression_list)->push_back(std::make_pair((yyvsp[-3].identifier),(yyvsp[-1].expression)));
 }
-#line 1598 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1599 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 202 "Expression.y" /* yacc.c:1646  */
+#line 203 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression_list) = new std::vector<std::pair<char*,ExpressionNode*>>;//do we need to replace by thrust?
 }
-#line 1606 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1607 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 207 "Expression.y" /* yacc.c:1646  */
+#line 208 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[0].expression);
 }
-#line 1614 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1615 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 212 "Expression.y" /* yacc.c:1646  */
+#line 213 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = NULL;
 }
-#line 1622 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1623 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 218 "Expression.y" /* yacc.c:1646  */
+#line 219 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.order_list) = (yyvsp[0].order_list);
 }
-#line 1630 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1631 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 223 "Expression.y" /* yacc.c:1646  */
+#line 224 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.order_list) = NULL;
 }
-#line 1638 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1639 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 228 "Expression.y" /* yacc.c:1646  */
+#line 229 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.order_list) = (yyvsp[-2].order_list);
 	(yyval.order_list)->push_back(std::make_pair((yyvsp[-1].expression),(yyvsp[0].distinct)));
 }
-#line 1647 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1648 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 234 "Expression.y" /* yacc.c:1646  */
+#line 235 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.order_list) = new std::vector<std::pair<ExpressionNode*,bool>>();//replace by thrust?
 	(yyval.order_list)->push_back(std::make_pair((yyvsp[-1].expression),(yyvsp[0].distinct)));
 }
-#line 1656 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1657 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 240 "Expression.y" /* yacc.c:1646  */
+#line 241 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),3 * sizeof(char));
@@ -1668,11 +1669,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1672 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1673 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 252 "Expression.y" /* yacc.c:1646  */
+#line 253 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),4 * sizeof(char));
@@ -1685,11 +1686,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1689 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1690 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 265 "Expression.y" /* yacc.c:1646  */
+#line 266 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),4 * sizeof(char));
@@ -1701,19 +1702,19 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1705 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1706 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 277 "Expression.y" /* yacc.c:1646  */
+#line 278 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression)=(yyvsp[0].expression);
 }
-#line 1713 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1714 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 282 "Expression.y" /* yacc.c:1646  */
+#line 283 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),8 * sizeof(char));
@@ -1730,11 +1731,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1734 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1735 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 299 "Expression.y" /* yacc.c:1646  */
+#line 300 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),7 * sizeof(char));
@@ -1750,11 +1751,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1754 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1755 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 315 "Expression.y" /* yacc.c:1646  */
+#line 316 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),13 * sizeof(char));
@@ -1776,11 +1777,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1780 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1781 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 337 "Expression.y" /* yacc.c:1646  */
+#line 338 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),12 * sizeof(char));
@@ -1801,11 +1802,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1805 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1806 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 358 "Expression.y" /* yacc.c:1646  */
+#line 359 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),12 * sizeof(char));
@@ -1826,11 +1827,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1830 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1831 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 379 "Expression.y" /* yacc.c:1646  */
+#line 380 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),9 * sizeof(char));
@@ -1848,19 +1849,19 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  1;
 }
-#line 1852 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1853 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 397 "Expression.y" /* yacc.c:1646  */
+#line 398 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[0].expression);
 }
-#line 1860 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1861 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 402 "Expression.y" /* yacc.c:1646  */
+#line 403 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),5 * sizeof(char));
@@ -1874,11 +1875,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
 }
-#line 1878 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1879 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 416 "Expression.y" /* yacc.c:1646  */
+#line 417 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),6 * sizeof(char));
@@ -1893,19 +1894,19 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
 }
-#line 1897 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1898 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 431 "Expression.y" /* yacc.c:1646  */
+#line 432 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[0].expression);
 }
-#line 1905 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1906 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 435 "Expression.y" /* yacc.c:1646  */
+#line 436 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),5 * sizeof(char));
@@ -1919,11 +1920,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  3;
 }
-#line 1923 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1924 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 449 "Expression.y" /* yacc.c:1646  */
+#line 450 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),4 * sizeof(char));
@@ -1936,11 +1937,11 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  3;
 }
-#line 1940 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1941 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 462 "Expression.y" /* yacc.c:1646  */
+#line 463 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->exp_operator)),7 * sizeof(char));
@@ -1956,48 +1957,48 @@ yyreduce:
 		YYABORT;
 	(yyval.expression)->type_of_expr =  2;
 }
-#line 1960 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1961 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 479 "Expression.y" /* yacc.c:1646  */
+#line 480 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[0].expression);
 }
-#line 1968 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1969 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 484 "Expression.y" /* yacc.c:1646  */
+#line 485 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	cudaMallocHost((void**)(&((yyval.expression)->column_name)),sizeof(char)*(1+strlen((yyvsp[0].identifier))));
 	strcpy((yyval.expression)->column_name,(yyvsp[0].identifier));
 	(yyval.expression)->type_of_expr =  get_type((yyval.expression)->column_name);
 }
-#line 1979 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1980 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 491 "Expression.y" /* yacc.c:1646  */
+#line 492 "Expression.y" /* yacc.c:1646  */
     {
 	cudaMallocHost((void**)&(yyval.expression),sizeof(ExpressionNode));
 	(yyval.expression)->value =(yyvsp[0].value);
 	(yyval.expression)->type_of_expr =  (floor((yyvsp[0].value)) == (yyvsp[0].value))?2:3;
 }
-#line 1989 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1990 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 497 "Expression.y" /* yacc.c:1646  */
+#line 498 "Expression.y" /* yacc.c:1646  */
     {
 	(yyval.expression) = (yyvsp[-1].expression);
 }
-#line 1997 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 1998 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
 
 
-#line 2001 "Expression.tab.cpp" /* yacc.c:1646  */
+#line 2002 "Expression.tab.cpp" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2225,7 +2226,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 500 "Expression.y" /* yacc.c:1906  */
+#line 501 "Expression.y" /* yacc.c:1906  */
 
 void yyerror(const char* error_msg)
 {
