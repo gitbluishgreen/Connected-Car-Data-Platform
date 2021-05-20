@@ -102,7 +102,6 @@ class ExpressionNode
 class SelectQuery
 {
 	public:
-		bool distinct_query;
 		std::vector<char*>* select_columns;//either this field or agg columns will be active.
         std::vector<std::pair<char*,ExpressionNode*>>* aggregate_columns;
 		std::vector<std::pair<ExpressionNode*,bool>>* order_term;
@@ -121,8 +120,14 @@ class select_comparator
         select_comparator(SelectQuery*);
         bool operator ()(const Schema&,const Schema&);//implements a strict weak ordering.
 };
-
-
+class distinct_comparator
+{
+    private:
+        SelectQuery* select_query;
+    public:
+        distinct_comparator(SelectQuery*);
+        bool operator ()(const Schema&,const Schema&);
+};
 //SELECT x,y,z from T where gear_toggle && speed < 20
 //A rows: launch A GPU threads 
 //obj -> obj.evaluate_bool_expr(row_object)
@@ -163,7 +168,6 @@ private:
     std::pair<int*,int*> djikstra_result(int,std::set<int>&);
 public:
     GPSSystem(int numVert, int* initMat);
-    std::vector<int> PathFinder(int,int,std::set<int>&);
     void convoyNodeFinder(std::map<int,int>&);
     std::vector<int> findGarageOrBunk(int,int,std::set<int>&);
 };
@@ -172,7 +176,8 @@ class request_body
 public:
    int request_type;
    int sending_car;
-   request_body(int,int);
+   int anomaly_flag;
+   request_body(int,int,int);
 };
 
 __host__ __device__ bool str_equal(const char*,const char*);

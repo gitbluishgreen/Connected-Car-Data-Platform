@@ -137,11 +137,11 @@ void show(SelectQuery* sq)
 
 void request_resolver(int* file_descriptor)
 {
-    request_body* rb = new request_body(0,0);
+    request_body* rb = new request_body(0,0,0);
     while(read(file_descriptor[0],rb,sizeof(request_body)))
     {
     //fuel routing or garage
-        std::cout<<"Resolving garage request from "<<rb->sending_car<<'\n';
+        //std::cout<<"Resolving garage request from "<<rb->sending_car<<'\n';
         int fd = shm_open("vertex_type",O_RDONLY,0666);
         ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
         int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
@@ -159,12 +159,28 @@ void request_resolver(int* file_descriptor)
         //dropped vertices haveto be computed randomly. 
         std::vector<int> path = gps_object->findGarageOrBunk(curr_pos,rb->request_type,dropped_vertices);
         char c[20];
-        if(path.size() == 0)
+        // std::cout<<"Path for "<<rb->sending_car<<": ";
+        // for(auto it: path)
+        //     std::cout<<it<<' ';
+        // std::cout<<'\n';
+        if(path.size() <= 1)
             continue;//don't send.
-        sprintf(c,"shm_3_%d",sending_car);
+        sprintf(c,"shm_1_%d",sending_car);
+        fd = shm_open(c,O_CREAT | O_RDWR,0666);
+        ftruncate(fd,4);
+        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ | PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = 1;
+        close(fd);
+        c[4] = '2';
+        fd = shm_open(c,O_CREAT | O_RDWR,0666);
+        ftruncate(fd,4);
+        ptr = (int*)mmap(0,sizeof(int),PROT_READ | PROT_WRITE,MAP_SHARED,fd,0);
+        *ptr = rb->anomaly_flag;
+        close(fd);
+        c[4] = '3';
         fd = shm_open(c,O_CREAT | O_RDWR, 0666);
         ftruncate(fd,4);
-        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+        ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = path.size();
         close(fd);
         c[4] = '4';
@@ -173,9 +189,6 @@ void request_resolver(int* file_descriptor)
         ptr = (int*)mmap(0,path.size(),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         for(int i = 0;i < path.size();i++)
             ptr[i] = path[i];
-        std::cout<<"\nSending a signal with:\n";
-        for(auto it: path)
-            std::cout<<it<<" ";
         close(fd);
         kill(sending_car,SIGUSR1);//send the updated path back to the end user.
     }
@@ -242,9 +255,7 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             //show(sq);
             if(sq->aggregate_columns != NULL)
             {
-                //std::cout<<"Fired this now!\n";
                 std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::string>> v = t->aggregate_select(sq);
-                //std::cout<<"Taking my time here...\n";
                 show_aggregate_query(v,sq);
             }
             else
@@ -254,6 +265,7 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
             }
             //t->PrintDatabase();
         }
+        std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     inp.close();
 }

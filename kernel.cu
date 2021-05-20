@@ -1,10 +1,10 @@
 #include "kernel.cuh"
 #include "proj_types.cuh"
-__global__ void set_zero(int* a)
+__global__ void set_zero(double* a)
 {
     a[blockIdx.x*blockDim.x + threadIdx.x] = 0;
 }
-__global__ void addMatrix(int* a,int* b)
+__global__ void addMatrix(double* a,int* b)
 {
     int ind = blockIdx.x*blockDim.x + threadIdx.x;
     a[ind]  += b[ind];

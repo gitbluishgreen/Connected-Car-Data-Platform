@@ -48,8 +48,8 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
     if(*ptr == 1)
     {
         //type 1 message: correction request
-        sprintf(c,"shm_2_%d",pid);
         close(fd);
+        c[4] = '2';
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4,PROT_READ,MAP_SHARED,fd,0);
         int x = *ptr;
@@ -58,16 +58,18 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         for(int i = 0;i < 10;i++)
         {
             int t = x>>i;
-            c1[i] == t&1;
+            c1[i] = t&1;
         }
-        
+        for(int i = 9;i >= 0;i--)
+            std::cout<<c1[i];
+        std::cout<<'\n';
         if(c1[0] || c1[1] || c1[2] || c1[3] || c1[4] || c1[5])
         {
             //oil percentage low. Maintenance needed!
             oil_level = 1.0;
             pressure_rl = pressure_rr = pressure_fl = pressure_fr = (limit_object->min_pressure+limit_object->max_pressure)/2.0;
             voltage = (limit_object->min_voltage + limit_object->max_voltage)/2.0;
-            sprintf(c,"shm_3_%d",pid);
+            c[4] = '3';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             int sz = *ptr;
@@ -85,8 +87,9 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         }
         if(c1[6])
         {
+            std::cout<<"Fuel percentage got corrected!\n";
             fuel_percentage = 1.0;
-            sprintf(c,"shm_3_%d",pid);
+            c[4] = '3';
             fd = shm_open(c,O_RDONLY,0666);
             ptr = (int*)mmap(0,sizeof(int),PROT_READ,MAP_SHARED,fd,0);
             int sz = *ptr;
@@ -158,7 +161,7 @@ void run_state(int numberOfCars,int numberOfVertices)
     pressure_rl = limit_object->min_pressure;
     pressure_rr = limit_object->min_pressure;
     voltage = limit_object->min_voltage;
-    fuel_percentage = 1.0;//start with full tank. Use some draining rate based on speed.
+    fuel_percentage = 0.1;//start with full tank. Use some draining rate based on speed.
     origin_index = 0;
     destination_index = 1;
     distance_covered = 0;

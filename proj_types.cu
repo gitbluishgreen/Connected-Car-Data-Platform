@@ -230,116 +230,166 @@ select_comparator::select_comparator(SelectQuery* sq)
 }
 bool select_comparator::operator ()(const Schema& s1,const Schema& s2)//all on host memory now.
 {
-    if(select_query->distinct)
+    for(std::pair<ExpressionNode*,bool> p: *(select_query->order_term))
     {
-        //select term exists. Order by this for now.
-        std::vector<char*>::iterator it;
-        bool fl = true;
-        for(it = select_query->select_columns->begin();it != select_query->select_columns->end();it++)
+        if(p.first->type_of_expr == 2)
         {
-            if(str_equal(*it,"vehicle_id")){
-                fl = fl & (s1.vehicle_id == s2.vehicle_id);
-            }
-            else if(str_equal(*it,"origin_vertex")){
-                fl = fl & (s1.origin_vertex == s2.origin_vertex);
-            }
-            else if(str_equal(*it,"destination_vertex")){
-                fl = fl & (s1.destination_vertex == s2.destination_vertex);
-            }
-            else if(str_equal(*it,"oil_life_pct")){
-                fl = fl & (s1.oil_life_pct == s2.oil_life_pct);
-            }
-            else if(str_equal(*it,"tire_p_rl")){
-                fl = fl & (s1.tire_p_rl == s2.tire_p_rl);
-            }
-            else if(str_equal(*it,"tire_p_rr")){
-                fl = fl & (s1.tire_p_rr == s2.tire_p_rr);
-            }
-            else if(str_equal(*it,"tire_p_fl")){
-                fl = fl & (s1.tire_p_fl == s2.tire_p_fl);
-            }
-            else if(str_equal(*it,"tire_p_fr")){
-                fl = fl & (s1.tire_p_fr == s2.tire_p_fr);
-            }
-            else if(str_equal(*it,"batt_volt")){
-                fl = fl & (s1.batt_volt == s2.batt_volt);
-            }
-            else if(str_equal(*it,"fuel_percentage")){
-                fl = fl & (s1.fuel_percentage == s2.fuel_percentage);
-            }
-            else if(str_equal(*it,"accel")){
-                fl = fl & (s1.accel == s2.accel);}
-            else if(str_equal(*it,"seatbelt")){
-                fl = fl & (s1.seatbelt == s2.seatbelt);
-            }
-            else if(str_equal(*it,"hard_brake")){
-                fl = fl & (s1.hard_brake == s2.hard_brake);
-            }
-            else if(str_equal(*it,"door_lock")){
-                fl = fl & (s1.door_lock == s2.door_lock);
-            }
-            else if(str_equal(*it,"gear_toggle")){
-                fl = fl & (s1.gear_toggle == s2.gear_toggle);
-            }
-            else if(str_equal(*it,"clutch")){
-                fl = fl & (s1.clutch == s2.clutch);
-            }
-            else if(str_equal(*it,"hard_steer")){
-                fl = fl & (s1.hard_steer == s2.hard_steer);
-            }
-            else if(str_equal(*it,"speed")){
-                fl = fl & (s1.speed == s2.speed);
-            }
-            else if(str_equal(*it,"distance")){
-                fl = fl & (s1.distance == s2.distance);
-            }
-        }
-        if(fl)
-        {
-            return false;
-        }
-    }
-    //filtered out based on distinct qualifier alone.
-    
-    if(select_query->order_term != NULL && select_query->order_term->size() != 0)
-    {
-        for(std::pair<ExpressionNode*,bool> p: *(select_query->order_term))
-        {
-            if(p.first->type_of_expr == 2)
-            {
-                int a11 = p.first->evaluate_int_expression(s1);
-                int a22 = p.first->evaluate_int_expression(s2);
-                if(a11 == a22)
-                    continue;
-                else
-                {
-                    if(!p.second)
-                        return (a11 < a22);
-                    else
-                        return (a11 > a22);
-                }
-            }
+            int a11 = p.first->evaluate_int_expression(s1);
+            int a22 = p.first->evaluate_int_expression(s2);
+            if(a11 == a22)
+                continue;
             else
             {
-                double a11 = p.first->evaluate_double_expression(s1);
-                double a22 = p.first->evaluate_double_expression(s2);
-                if(a11 == a22)
-                    continue;
+                if(!p.second)
+                    return (a11 < a22);
                 else
-                {
-                    if(!p.second)
-                        return (a11 < a22);
-                    else
-                        return (a11 > a22);
-                }
+                    return (a11 > a22);
             }
         }
-        return true;
+        else
+        {
+            double a11 = p.first->evaluate_double_expression(s1);
+            double a22 = p.first->evaluate_double_expression(s2);
+            if(a11 == a22)
+                continue;
+            else
+            {
+                if(!p.second)
+                    return (a11 < a22);
+                else
+                    return (a11 > a22);
+            }
+        }
     }
-    else
+    return false;
+}
+distinct_comparator::distinct_comparator(SelectQuery* sq)
+{
+    select_query = sq;
+}
+bool distinct_comparator::operator ()(const Schema&s1, const Schema& s2)
+{
+     //select term exists. Order by this for now.
+    std::vector<char*>::iterator it;
+    for(it = select_query->select_columns->begin();it != select_query->select_columns->end();it++)
     {
-        return true;//simply order as read by table.
+        if(str_equal(*it,"vehicle_id")){
+            if(s1.vehicle_id == s2.vehicle_id)
+                continue;
+            else
+                s1.vehicle_id < s2.vehicle_id;
+        }
+        else if(str_equal(*it,"origin_vertex"))
+        {
+            if(s1.origin_vertex == s2.origin_vertex)
+                continue;
+            else
+                return s1.origin_vertex < s2.origin_vertex;
+        }
+        else if(str_equal(*it,"destination_vertex")){
+            if(s1.destination_vertex == s2.destination_vertex)
+                continue;
+            else
+                return s1.destination_vertex < s2.destination_vertex;
+        }
+        else if(str_equal(*it,"oil_life_pct")){
+            if(s1.oil_life_pct == s2.oil_life_pct)  
+                continue;
+            else
+                return s1.oil_life_pct < s2.oil_life_pct;
+        }
+        else if(str_equal(*it,"tire_p_rl")){
+            if(s1.tire_p_rl == s2.tire_p_rl)
+                continue;
+            else
+                return (s1.tire_p_rl < s2.tire_p_rl);
+        }
+        else if(str_equal(*it,"tire_p_rr")){
+            if(s1.tire_p_rr == s2.tire_p_rr)
+                continue;
+            else
+                return s1.tire_p_rr < s2.tire_p_rr;
+        }
+        else if(str_equal(*it,"tire_p_fl")){
+            if(s1.tire_p_fl == s2.tire_p_fl)
+                continue;
+            else
+                return s1.tire_p_fl < s2.tire_p_fl;
+        }
+        else if(str_equal(*it,"tire_p_fr")){
+            if(s1.tire_p_fr == s2.tire_p_fr)
+                continue;
+            else
+                return s1.tire_p_fr < s2.tire_p_fr;
+        }
+        else if(str_equal(*it,"batt_volt")){
+            if(s1.batt_volt == s2.batt_volt)
+                continue;
+            return s1.batt_volt < s2.batt_volt;
+        }
+        else if(str_equal(*it,"fuel_percentage")){
+            if(s1.fuel_percentage == s2.fuel_percentage)    
+                continue;
+            else
+                s1.fuel_percentage < s2.fuel_percentage;
+
+        }
+        else if(str_equal(*it,"accel")){
+            if(s1.accel == s2.accel)
+                continue;
+            else
+                return s1.accel < s2.accel;
+        }
+        else if(str_equal(*it,"seatbelt")){
+            if(s1.seatbelt == s2.seatbelt)
+                continue;
+            else
+                return s1.seatbelt < s2.seatbelt;
+        }
+        else if(str_equal(*it,"hard_brake")){
+            if(s1.hard_brake == s2.hard_brake)
+                continue;
+            else
+                return s1.hard_brake < s2.hard_brake;
+        }
+        else if(str_equal(*it,"door_lock")){
+            if(s1.door_lock == s2.door_lock)
+                continue;
+            else
+                return s1.door_lock < s2.door_lock;
+        }
+        else if(str_equal(*it,"gear_toggle")){
+            if(s1.gear_toggle == s2.gear_toggle)
+                continue;
+            else
+                return s1.gear_toggle < s2.gear_toggle;
+        }
+        else if(str_equal(*it,"clutch")){
+            if(s1.clutch == s2.clutch)
+                continue;
+            else
+                return s1.clutch < s2.clutch;
+        }
+        else if(str_equal(*it,"hard_steer")){
+            if(s1.hard_steer == s2.hard_steer)
+                continue;
+            else
+                return s1.hard_steer < s2.hard_steer;
+        }
+        else if(str_equal(*it,"speed")){
+            if(s1.speed == s2.speed)
+                continue;
+            else
+                return s1.speed < s2.speed;
+        }
+        else if(str_equal(*it,"distance")){
+            if(s1.distance == s2.distance)  
+                continue;
+            else
+                return s1.distance < s2.distance;
+        }
     }
+    return false;
 }
 
 void Table::WriteRows()
@@ -430,7 +480,7 @@ void Table::state_update(Schema& s)
         row[1] = std::min(row[1]+1,(int)(l->pressure_violation_time));
         if(row[1] == l->pressure_violation_time)
         {
-            anomaly_flag |= 1<<1;
+            anomaly_flag |= (1<<1);
             b[1] = true;
             row[1] = 0;
         }
@@ -442,7 +492,7 @@ void Table::state_update(Schema& s)
         row[2] = std::min(row[2]+1,(int)(l->pressure_violation_time));
         if(row[2] == l->pressure_violation_time)
         {
-            anomaly_flag |= 1<<2;
+            anomaly_flag |= (1<<2);
             b[2] = true;
             row[2] = 0;
         }
@@ -454,7 +504,7 @@ void Table::state_update(Schema& s)
         row[3] = std::min(row[3]+1,(int)(l->pressure_violation_time));
         if(row[3] == l->pressure_violation_time)
         {
-            anomaly_flag |= 1<<3;
+            anomaly_flag |= (1<<3);
             b[3] = true;
             row[3] = 0;
         }
@@ -466,7 +516,7 @@ void Table::state_update(Schema& s)
         row[4] = std::min(row[4]+1,(int)(l->pressure_violation_time));
         if(row[4] == l->pressure_violation_time)
         {
-            anomaly_flag |= 1<<4;
+            anomaly_flag |= (1<<4);
             b[4] = true;
             row[4] = 0;
         }
@@ -478,7 +528,7 @@ void Table::state_update(Schema& s)
         row[5] = std::min(row[5]+1,(int)(l->voltage_violation_time));
         if(row[5] == (int)(l->voltage_violation_time))
         {
-            anomaly_flag |= 1<<5;
+            anomaly_flag |= (1<<5);
             b[5] = true;
             row[5] = 0;
         }
@@ -490,7 +540,7 @@ void Table::state_update(Schema& s)
         row[6] = std::min(row[6]+1,(int)(l->fuel_violation_time));
         if(row[6] == (int)(l->fuel_violation_time))
         {
-            anomaly_flag |= 1<<6;
+            anomaly_flag |= (1<<6);
             b[6] = true;
             row[6] = 0;
         }
@@ -502,7 +552,7 @@ void Table::state_update(Schema& s)
         row[7] = std::min(row[7]+1,(int)(l->brake_violation_time));
         if(row[7] == (int)(l->brake_violation_time))
         {
-            anomaly_flag |= 1<<7;
+            anomaly_flag |= (1<<7);
             b[7] = true;
             row[7] = 0;
         }
@@ -514,7 +564,7 @@ void Table::state_update(Schema& s)
         row[8] = std::min(row[8]+1,(int)(l->door_violation_time));
         if(row[8] == (int)(l->door_violation_time))
         {
-            anomaly_flag |= 1<<8;
+            anomaly_flag |= (1<<8);
             b[8] = true;
             row[8] = 0;
         }
@@ -526,7 +576,7 @@ void Table::state_update(Schema& s)
         row[9] = std::min(row[9]+1,(int)(l->steer_violation_time));
         if(row[9] == (int)(l->steer_violation_time))
         {
-            anomaly_flag |= 1<<9;
+            anomaly_flag |= (1<<9);
             b[9] = true;
             row[9] = 0;
         }
@@ -534,34 +584,34 @@ void Table::state_update(Schema& s)
     if(anomaly_flag != 0)
     {
         char c[20];
-        //std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
+        // std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
         // for(int j=0;j<10;j++)
         //     std::cout<<b[j];
         // std::cout<<'\n';
-        sprintf(c,"shm_1_%d",s.vehicle_id);
-        int fd = shm_open(c,O_CREAT|O_RDWR,0666);
-        ftruncate(fd,sizeof(int));
-        int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-        *ptr = 1;
-        close(fd);
-        c[4] = '2';
-        fd = shm_open(c,O_CREAT|O_RDWR,0666);
-        ftruncate(fd,sizeof(int));
-        ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-        *ptr = anomaly_flag;
-        close(fd);//close file descriptor.
         if(b[0] || b[1] || b[2] || b[3] || b[4] || b[5])
         {
-            request_body* rb = new request_body(2,s.vehicle_id);
+            request_body* rb = new request_body(2,s.vehicle_id,anomaly_flag);
             write(request_file_descriptor[1],rb,sizeof(request_body));//this will take care of signalling and updating the rest.
         }
-        else if(b[6])
+        if(b[6])
         {
-            request_body* rb = new request_body(3,s.vehicle_id);
+            request_body* rb = new request_body(3,s.vehicle_id,anomaly_flag);
             write(request_file_descriptor[1],rb,sizeof(request_body));//this will take care of signalling and updating the rest.
         }
-        else
+        if(!b[0] && !b[1] && !b[2] && !b[3] && !b[4] && !b[5] && !b[6])
         {
+            sprintf(c,"shm_1_%d",s.vehicle_id);
+            int fd = shm_open(c,O_CREAT|O_RDWR,0666);
+            ftruncate(fd,sizeof(int));
+            int* ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+            *ptr = 1;
+            close(fd);
+            c[4] = '2';
+            fd = shm_open(c,O_CREAT|O_RDWR,0666);
+            ftruncate(fd,sizeof(int));
+            ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+            *ptr = anomaly_flag;
+            close(fd);//close file descriptor.
             kill(s.vehicle_id,SIGUSR1);//send a signal now itself. 
         }   
     }
@@ -597,25 +647,24 @@ std::vector<Schema> Table::select(SelectQuery* select_query)
     cudaMemcpy(retArr, selectedValues, size*sizeof(Schema), cudaMemcpyDeviceToHost);
     cudaFree(selectedValues);
     mtx.unlock();
-    std::vector<Schema> v2;
-    std::set<Schema,select_comparator> return_values(v2.begin(),v2.end(),select_comparator(select_query));//absurd syntax!
     std::vector<Schema> result;
-    int i = 0;
-    //std::cout<<"I picked up "<<size<<"!\n";
-    for(i = 0;i < size;i++)
-        return_values.insert(retArr[i]);//now in proper sorted order
-    int ms = (select_query->limit_term == 0)?(return_values.size()):(std::min((int)(return_values.size()),(int)select_query->limit_term));
-    //std::cout<<"Size is "<<return_values.size()<<" to be cut to "<<ms<<"!\n";
-    i = 0;
-    for(auto it: return_values)
+    if(select_query->distinct)
     {
-        if(i == ms)
-        {
-            break;
-        }
-        result.push_back(it);
-        i++;
+        std::set<Schema,distinct_comparator> dis_set(result.begin(),result.end(),distinct_comparator(select_query));
+        for(int i=0;i < size;i++)
+            dis_set.insert(retArr[i]);
+        for(Schema s: dis_set)
+            result.push_back(s);
     }
+    else
+    {
+        for(int i =0;i < size;i++)
+            result.push_back(retArr[i]);
+    }
+    if(select_query->order_term != NULL && select_query->order_term->size() >= 1)
+        std::sort(result.begin(),result.end(),select_comparator(select_query));
+    int ms = (select_query->limit_term <= 0)?(result.size()):(std::min((int)(result.size()),(int)select_query->limit_term));
+    result.resize(ms);
     return result;
 }
 
@@ -959,7 +1008,6 @@ void Table::PrintDatabase()
     mtx.lock();
     Schema* arr = (Schema*)malloc(sizeof(Schema)*numberOfRows);
     cudaMemcpy(arr,StateDatabase,numberOfRows*sizeof(Schema),cudaMemcpyDeviceToHost);
-    std::cout<<"Printing Database now!\n";
     for(int i = 0;i < numberOfRows;i++)
     {
         std::cout<<"Vehicle ID = "<<arr[i].vehicle_id<<'\n';
@@ -1017,14 +1065,16 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
         }
         int* deviceDistance;
         int* hostDistance = (int*)malloc(sizeof(int)*numberOfVertices);
+        int* hostParent = (int*)malloc(numberOfVertices*sizeof(int));
         for(int i = 0; i < numberOfVertices; i ++){
             hostDistance[i] = ((i == source)?0:INT_MAX);
+            hostParent[i] = -1;
         }
         int* deviceParent;
-        int* hostParent = (int*)malloc(numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceUsed, numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceDistance, numberOfVertices*sizeof(int));
         cudaMalloc((void**)&deviceParent, numberOfVertices*sizeof(int));
+        cudaMemcpy(deviceParent,hostParent,numberOfVertices*sizeof(int),cudaMemcpyHostToDevice);
         cudaMemcpy(deviceUsed, hostUsed, numberOfVertices*sizeof(int), cudaMemcpyHostToDevice);
         cudaMemcpy(deviceDistance, hostDistance, numberOfVertices*sizeof(int), cudaMemcpyHostToDevice);
         
@@ -1060,8 +1110,8 @@ std::pair<int*,int*> GPSSystem::djikstra_result(int source,std::set<int>& setDro
         }
     cudaMemcpy(hostParent, deviceParent, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(hostDistance, deviceDistance, numberOfVertices*sizeof(int), cudaMemcpyDeviceToHost);
-    for(auto it: setDroppedVertices)
-        std::cout<<"Dropping "<<it<<'\n';
+    // for(auto it: setDroppedVertices)
+    //     std::cout<<"Dropping "<<it<<'\n';
     return std::make_pair(hostParent,hostDistance);
 }
 
@@ -1073,30 +1123,12 @@ GPSSystem::GPSSystem(int numVert, int* initMat){
 }
 }
 
-std::vector<int> GPSSystem::PathFinder(int source, int destination,std::set<int>& setDroppedVertices){
-    std::pair<int*,int*> value = djikstra_result(source, setDroppedVertices);
-    int hostParent[numberOfVertices];
-    int hostDistance[numberOfVertices];
-    cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
-    cudaMemcpy(hostDistance,value.second,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
-    std::vector<int> path;
-    if(hostDistance[destination] == INT_MAX) return path;
-    int currentVertex = destination;
-    while(currentVertex != source){
-        path.push_back(currentVertex);
-        currentVertex = hostParent[currentVertex];
-    }
-    path.push_back(source);
-    std::reverse(path.begin(), path.end());
-    return path;
-}
-
 void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
 {
     //djikstras kernel call,and then cumulatively add those distances. Then check the city with least sum of 
     //distance and ask cars to converge there.
-    int* sum_array;
-    cudaMalloc((void**)&sum_array,numberOfVertices*sizeof(int));
+    double* sum_array;
+    cudaMalloc((void**)&sum_array,numberOfVertices*sizeof(double));
     init_bt(numberOfVertices);
     set_zero<<<nb,nt>>>(sum_array);
     cudaDeviceSynchronize();
@@ -1111,30 +1143,25 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
         if(included_vertices.find(i) == included_vertices.end())
         {
             double y = rand()/RAND_MAX;
-            if(y <= 0.5)//randomly dropped, can be adjusted. 
+            if(y <= 0.2)//randomly dropped, can be adjusted. 
                 droppedVertices.insert(i);
         }
     }
     std::vector<int*> parent_array;
     std::pair<int*,int*> p;
     init_bt(numberOfVertices);
+    std::cout<<included_vertices.size()<<"\n";
+    int* device_distances;
+    cudaMalloc((void**)&device_distances,numberOfVertices*sizeof(int));
     for(int i: included_vertices)
-    {
+    {   
         p = djikstra_result(i,droppedVertices);
         parent_array.push_back(p.first);
-        addMatrix<<<nb,nt>>>(sum_array,p.second);
+        cudaMemcpy(device_distances,p.second,numberOfVertices*sizeof(int),cudaMemcpyHostToDevice);
+        addMatrix<<<nb,nt>>>(sum_array,device_distances);
         cudaDeviceSynchronize();
     }
-    int dev_array[numberOfVertices];
-    cudaMemcpy(dev_array,sum_array,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
-    for(int i = 0;i< numberOfVertices;i++) 
-        std::cout<<dev_array[i]<<": ";
-    int min_index = 0;
-    for(int i = 0;i < numberOfVertices;i++)
-    {
-        if(dev_array[i] < dev_array[min_index])
-            min_index = i;
-    }
+    int min_index = thrust::min_element(thrust::device,sum_array,sum_array+numberOfVertices) - sum_array;
     //now write to shared memory and send a signal to each car.
     for(std::pair<int,int> p: car_ids)//gives their respective current positions.
     {
@@ -1146,6 +1173,12 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
             curr = parent_array[p.second][curr];
         }
         std::reverse(path.begin(),path.end());
+        std::cout<<"Path for "<<p.first<<": ";
+        for(auto it: path)
+            std::cout<<it<<" ";
+        std::cout<<'\n';
+        if(path.size() == 1)
+            continue;
         char c[20];
         sprintf(c,"shm_1_%d",p.first);
         int fd = shm_open(c,O_CREAT|O_RDWR,0666);
@@ -1173,13 +1206,8 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
 
 std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set<int>& setDroppedVertices){
     std::pair<int*,int*> value = djikstra_result(source, setDroppedVertices);
-    int hostParent[numberOfVertices];
-    int hostDistance[numberOfVertices];
-    cudaMemcpy(hostParent,value.first,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
-    std::cout<<"Data is \n";
-    for(int i = 0;i < numberOfVertices;i++)
-        std::cout<<hostParent[i]<<" ";
-    cudaMemcpy(hostDistance,value.second,numberOfVertices*sizeof(int),cudaMemcpyDeviceToHost);
+    int* hostParent = value.first;
+    int* hostDistance = value.second;
     int fd = shm_open("vertex_type",O_RDONLY,0666);
     int* arr = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     int min_dist = INT_MAX;
@@ -1199,12 +1227,17 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
     if(min_dist == INT_MAX)
         return path;
     int currentVertex = path_v;
-    while(currentVertex != source){
+    while(currentVertex != -1){
         path.push_back(currentVertex);
         currentVertex = hostParent[currentVertex];
     }
-    path.push_back(source);
     std::reverse(path.begin(), path.end());
+    for(int i = 0;i < numberOfVertices;i++)
+        std::cout<<hostParent[i]<<' ';
+    std::cout<<"\n";
+    for(int it: path)
+        std::cout<<it<<" ";
+    std::cout<<'\n';
     close(fd);
     return path;
 }
@@ -1228,8 +1261,9 @@ __host__ __device__ bool str_equal(const char* s1, const char* s2)
     }
     return true;
 }
-request_body::request_body(int type,int s_car)
+request_body::request_body(int type,int s_car,int af)
 {
     request_type = type;
     sending_car = s_car;
+    anomaly_flag = af;
 }
