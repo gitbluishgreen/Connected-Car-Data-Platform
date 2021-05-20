@@ -599,10 +599,10 @@ void Table::state_update(Schema& s)
     if(anomaly_flag != 0)
     {
         char c[20];
-        // std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
-        // for(int j=0;j<10;j++)
-        //     std::cout<<b[j];
-        // std::cout<<'\n';
+        std::cout<<"Anomaly detected for "<<s.vehicle_id<<" and is ";
+        for(int j=0;j<10;j++)
+            std::cout<<b[j];
+        std::cout<<'\n';
         if(b[0] || b[1] || b[2] || b[3] || b[4] || b[5])
         {
             request_body* rb = new request_body(2,s.vehicle_id,anomaly_flag);
@@ -663,6 +663,7 @@ std::vector<Schema> Table::select(SelectQuery* select_query)
     cudaFree(selectedValues);
     mtx.unlock();
     std::vector<Schema> result;
+    //std::cout<<"Got here!"<<std::endl;
     if(select_query->distinct)
     {
         std::set<Schema,distinct_comparator> dis_set(result.begin(),result.end(),distinct_comparator(select_query));
@@ -676,6 +677,7 @@ std::vector<Schema> Table::select(SelectQuery* select_query)
         for(int i =0;i < size;i++)
             result.push_back(retArr[i]);
     }
+    //std::cout<<"After distinct!"<<std::endl;
     if(select_query->order_term != NULL && select_query->order_term->size() >= 1)
         std::sort(result.begin(),result.end(),select_comparator(select_query));
     int ms = (select_query->limit_term <= 0)?(result.size()):(std::min((int)(result.size()),(int)select_query->limit_term));
@@ -689,7 +691,7 @@ std::pair<std::vector<std::vector<std::pair<double,double>>>,std::vector<std::st
     //now proceed to process
     std::vector<std::vector<std::pair<double,double>>> v1;
     std::vector<std::string> s;
-    if(selected_rows.size() ==0)
+    if(selected_rows.size() == 0)
         return std::make_pair(v1,s);
     if(select_query->group_term != NULL)
     {
@@ -1199,10 +1201,9 @@ void GPSSystem::convoyNodeFinder(std::map<int,int>& car_ids)
             curr = parent_array[vertex_map[p.second]][curr];
         }
         std::reverse(path.begin(),path.end());
-        std::cout<<"Path for "<<p.first<<": ";
-        for(auto it: path)
-            std::cout<<it<<" ";
-        std::cout<<'\n';
+        // std::cout<<"Path for "<<p.first<<": ";
+        // std::copy(path.begin(),path.end(),std::ostream_iterator<int>(std::cout," "));
+        // std::cout<<'\n';
         if(path.size() == 1)
             continue;
         char c[20];
@@ -1237,7 +1238,15 @@ std::vector<int> GPSSystem::findGarageOrBunk(int source,int target_type,std::set
     int fd = shm_open("vertex_type",O_RDONLY,0666);
     int* arr = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
     int min_dist = INT_MAX;
-    int path_v = thrust::min_element(thrust::host,hostDistance,hostDistance + numberOfVertices) - hostDistance;
+    int path_v = -1;
+    for(int i = 0;i < numberOfVertices;i++)
+    {
+        if(arr[i] == target_type && hostDistance[i] < min_dist)
+        {
+            min_dist = hostDistance[i];
+            path_v = i;
+        }
+    }
     std::vector<int> path;
     if(min_dist == INT_MAX)
         return path;

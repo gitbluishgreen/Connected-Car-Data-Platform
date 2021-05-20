@@ -1,2 +1,7 @@
-SELECT * LIMIT 10
-SELECT vehicle_id LIMIT 100
+SELECT * WHERE distance < 0.1 ORDER BY vehicle_id LIMIT 100
+SELECT DISTINCT vehicle_id LIMIT 20
+SELECT DISTINCT vehicle_id,fuel_percentage,distance ORDER BY fuel_percentage DESC vehicle_id ASC LIMIT 100
+SELECT MAX(speed) WHERE distance < 3 GROUP BY vehicle_id ORDER BY fuel_percentage LIMIT 1000
+CONVOY 5 1 2 3 4 5
+SELECT * WHERE distance > 0.2 LIMIT 10
+SELECT AVERAGE(distance) WHERE speed < 10 LIMIT 1000

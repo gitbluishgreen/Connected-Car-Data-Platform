@@ -2,6 +2,7 @@
 #define PROJ_TYPES_H
 #include <string>
 #include <iostream>
+#include <iterator>
 #include <vector>
 #include <algorithm>
 #include <map>
@@ -58,9 +59,9 @@ class Limits
     //this is actually the case by seeing if a contiguous number of such messages are actually received. One such
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
-        double acceleration = 0.004;//typical accln of 4 ms^-2
+        double acceleration = 0.04;//typical accln of 4 ms^-2
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank. Default = 1650
-        double interval_between_messages = 0.1;//10 messages per second.
+        double interval_between_messages = 0.001;//10 messages per second.
         double oil_capacity = 0.0002071;//1/4827.9, decrease in oil_pct per km. (Assuming 3000 miles for full drain).
         double speed_violation_time;//the number of contiguous status messages that indicate a fault.
         double brake_violation_time;
@@ -72,7 +73,7 @@ class Limits
         double steer_violaton_time;
         double voltage_violation_time;
         double steer_violation_time;
-        double max_speed = 200;
+        double max_speed = 300;
         double min_pressure = 30;//pounds per square inch
         double min_voltage = 13.7;//for a typical car, voltage while running is 13.7-14.7 volts
         double max_voltage = 14.7;

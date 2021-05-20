@@ -107,7 +107,7 @@ void show_normal_query(const std::vector<Schema>& selected_rows,SelectQuery* sel
             if(ind + 1 < select_query->select_columns->size())
                 std::cout<<",";
             else
-                std::cout<<"}\n";
+                std::cout<<"}"<<std::endl;
         }
     }
 }
@@ -122,7 +122,7 @@ void show_aggregate_query(const std::pair<std::vector<std::vector<std::pair<doub
         int sz = v.first[i].size();
         for(j=0;j<sz-1;j++)
             std::cout<<"("<<v.first[i][j].first<<","<<v.first[i][j].second<<"),";
-        std::cout<<"("<<v.first[i][sz-1].first<<","<<v.first[i][sz-1].second<<")}\n";
+        std::cout<<"("<<v.first[i][sz-1].first<<","<<v.first[i][sz-1].second<<")}"<<std::endl;
     }
 }
 
@@ -134,7 +134,7 @@ void show(SelectQuery* sq)
     if(sq->aggregate_columns != NULL)
         for(auto it: *(sq->aggregate_columns)){
             std::cout<<"("<<it.first<<" "<<it.second<<"),";
-            std::cout<<'\n';
+            std::cout<<std::endl;
         }
     std::cout<<sq->limit_term<<'\n';
     display(sq->select_expression,NULL);
@@ -146,7 +146,7 @@ void request_resolver(int* file_descriptor)
     while(read(file_descriptor[0],rb,sizeof(request_body)))
     {
     //fuel routing or garage
-        //std::cout<<"Resolving garage request from "<<rb->sending_car<<'\n';
+        std::cout<<"Resolving fuel or garage request from "<<rb->sending_car<<std::endl;
         int fd = shm_open("vertex_type",O_RDONLY,0666);
         ftruncate(fd,numberOfVertices*sizeof(int));//each node has an associated type. 
         int* type_array = (int*)mmap(0,numberOfVertices*sizeof(int),PROT_READ,MAP_SHARED,fd,0);
@@ -157,7 +157,7 @@ void request_resolver(int* file_descriptor)
         for(int i = 0;i < numberOfVertices;i++)
         {
             double y = (double)rand();
-            if(y/RAND_MAX < 0.5 && type_array[i] == 1 && i != curr_pos)//adjust manually
+            if(y/RAND_MAX < 0.1 && type_array[i] == 1 && i != curr_pos)//adjust manually
                 dropped_vertices.insert(i);//have to ensure that this does not have current position of the car itself!
         }
         close(fd);
@@ -168,26 +168,28 @@ void request_resolver(int* file_descriptor)
         // for(auto it: path)
         //     std::cout<<it<<' ';
         // std::cout<<'\n';
-        if(path.size() <= 1)
-            continue;//don't send.
+        // std::cout<<"Hi1"<<std::endl;
         sprintf(c,"shm_1_%d",sending_car);
         fd = shm_open(c,O_CREAT | O_RDWR,0666);
-        ftruncate(fd,4);
+        ftruncate(fd,sizeof(int));
         int* ptr = (int*)mmap(0,sizeof(int),PROT_READ | PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = 1;
         close(fd);
+        //std::cout<<"Hi2"<<std::endl;
         c[4] = '2';
         fd = shm_open(c,O_CREAT | O_RDWR,0666);
-        ftruncate(fd,4);
+        ftruncate(fd,sizeof(int));
         ptr = (int*)mmap(0,sizeof(int),PROT_READ | PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = rb->anomaly_flag;
         close(fd);
+        //std::cout<<"Hi3"<<std::endl;
         c[4] = '3';
         fd = shm_open(c,O_CREAT | O_RDWR, 0666);
-        ftruncate(fd,4);
+        ftruncate(fd,sizeof(int));
         ptr = (int*)mmap(0,sizeof(int),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
         *ptr = path.size();
         close(fd);
+        //std::cout<<"Hi4"<<std::endl;
         c[4] = '4';
         fd = shm_open(c,O_CREAT|O_RDWR,0666);
         ftruncate(fd,sizeof(int)*path.size());
@@ -195,6 +197,7 @@ void request_resolver(int* file_descriptor)
         for(int i = 0;i < path.size();i++)
             ptr[i] = path[i];
         close(fd);
+        //std::cout<<"Hi I'm signalling "<<sending_car<<"\n";
         kill(sending_car,SIGUSR1);//send the updated path back to the end user.
     }
 }
@@ -207,6 +210,7 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
     inp.open("query.txt",std::ifstream::in);
     while(std::getline(inp,s))
     {
+        std::cout<<s<<'\n';
         if(s == "KILL")
             break;
         else if(s.find("CONVOY",0) == 0)
@@ -239,7 +243,7 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
                 continue;//rejected query.
             
             //convoy request. Proceed to read the set of cars in the convoy, and resolve the same.
-            std::cout<<"Convoy query!\n";
+            std::cout<<"===================="<<std::endl<<"Convoy query!"<<std::endl;
             std::map<int,int> returned_details = t->get_latest_position();//gets latest position of all cars. Lock needed?
             std::map<int,int> car_details;
             for(int it: v)
@@ -248,12 +252,14 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
                 car_details[x] = returned_details[x];
             }
             gps_object->convoyNodeFinder(car_details);//takes care of what is needed, including sending a signal to all.
+            std::cout<<"===================="<<std::endl;
         }
         else
         {
+            std::cout<<"===================="<<std::endl;
             SelectQuery* sq = process_query(s);
             if(sq == NULL){
-                std::cout<<"Ill-formatted query!\n";
+                std::cout<<"Ill-formatted query!"<<std::endl;
                 continue;
             }
             //show(sq);
@@ -267,10 +273,12 @@ void query_resolver(int* file_descriptor)//pipe to write to request resolver
                 std::vector<Schema> v = t->normal_select(sq);
                 show_normal_query(v,sq);
             }
+            std::cout<<"===================="<<std::endl;
             //t->PrintDatabase();
         }
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
+    std::cerr<<"Came here!\n";
     inp.close();
 }
 
@@ -305,11 +313,11 @@ int main(int argc, char* argv[])
     close(fd);
     gps_object = new GPSSystem(numberOfVertices, hostAdjacencyMatrix);
     input_file.close();
-    std::thread t1(initialize,numberOfCars,numberOfVertices,f,car_map);//creates and runs the cars.
+    std:: thread t1(initialize,numberOfCars,numberOfVertices,f,car_map);//creates and runs the cars.
+    t1.join();
     std::thread t2(listener,f);//listens for server messages.
     std::thread t3(query_resolver,request_fd);
     std::thread t4(request_resolver,request_fd);
-    t1.join();
     t2.join();
     t3.join();
     t4.join();

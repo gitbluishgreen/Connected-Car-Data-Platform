@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <iostream>
+#include <random>
 #include <algorithm>
 #include <sys/types.h>
 #include <sys/shm.h>
@@ -42,7 +43,7 @@ static struct sigaction sa1;
 void car_message_handler(int sig, siginfo_t* sig_details,void* context)
 {
     //handles the signal. Could be an anomaly signal from the master,convoy or communication message.
-    std::cout<<pid<<" was pulled up by master!\n";
+    //std::cout<<pid<<" was pulled up by master!\n";
     char c[20];
     sprintf(c,"shm_1_%d",pid);//primary shared memory used to decide the type of message.
     int* ptr;
@@ -56,9 +57,10 @@ void car_message_handler(int sig, siginfo_t* sig_details,void* context)
         fd = shm_open(c,O_RDONLY,0666);
         ptr = (int*)mmap(0,4,PROT_READ,MAP_SHARED,fd,0);
         int x = *ptr;
+        std::cout<<"The anomaly flag was "<<x<<'\n';
         close(fd);
-        int c1[10];
-        for(int i = 0;i < 10;i++)
+        int c1[11];
+        for(int i = 0;i <= 10;i++)
         {
             int t = x>>i;
             c1[i] = t&1;
@@ -180,7 +182,9 @@ void run_state(int numberOfCars,int numberOfVertices)
     path.resize(numberOfVertices);
     for(int i = 0;i < numberOfVertices;i++)
         path[i] = i;
-    std::random_shuffle(path.begin(),path.end());
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::shuffle(path.begin(),path.end(),generator);
     while(true)
     {
         obj.database_index = count;
@@ -209,7 +213,7 @@ void run_state(int numberOfCars,int numberOfVertices)
         obj.accel = true;
         prev_gear = new_gear;
         prev_speed = new_speed;
-        double incremental_distance = limit_object->interval_between_messages*(prev_speed*conversion_factor + (new_speed-prev_speed)*0.5*limit_object->interval_between_messages*conversion_factor);
+        double incremental_distance = limit_object->interval_between_messages*(prev_speed*conversion_factor + 0.5*limit_object->acceleration*limit_object->interval_between_messages);
         distance_covered +=  incremental_distance;   
         total_distance_covered += incremental_distance;
         if(distance_covered >= adjacency_matrix[numberOfCars*path[origin_index]+path[destination_index]])
