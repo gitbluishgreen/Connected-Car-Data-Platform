@@ -12,6 +12,8 @@ Features that can further be added in the future:
 2. Time regulated traffic signals as an alternative to the current randomized mechanism of dropped vertices. 
 
 ## Query Syntax:
+
+See the file `query.txt` for example queries.
 Here **?** denotes an optionalclause in the query.
 1. For Ordinary Select Queries: 
     **SELECT Columns (WHERE EXP1)? (ORDER BY EXP2)? (LIMIT val)?**
