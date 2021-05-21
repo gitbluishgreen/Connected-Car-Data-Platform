@@ -444,7 +444,7 @@ Exp3: Exp3 Mult Term
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
-	$$->type_of_expr =  3;
+	$$->type_of_expr =  std::max($1->type_of_expr,$3->type_of_expr);
 }
 | Exp3 Div Term
 {
@@ -457,7 +457,7 @@ Exp3: Exp3 Mult Term
 	$$->right_hand_term = $3;
 	if($1->type_of_expr ==  1 || $3->type_of_expr == 1)
 		YYABORT;
-	$$->type_of_expr =  3;
+	$$->type_of_expr =  std::max($1->type_of_expr,$3->type_of_expr);
 }
 | Exp3 Modulo Term
 {
