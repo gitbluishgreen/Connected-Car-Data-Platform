@@ -14,10 +14,10 @@ Features that can further be added in the future:
 ## Query Syntax:
 
 See the file `query.txt` for example queries.
-Here **?** denotes an optionalclause in the query.
+Here **?** denotes an optional clause in the query.
 1. For Ordinary Select Queries: 
     **SELECT Columns (WHERE EXP1)? (ORDER BY EXP2)? (LIMIT val)?**
-    Here Columns can be any comma-separated values among **{vehicle_id,oil_life_pct,tire_p_rl,tire_p_rr,tire_p_fl,tire_p_fr,batt_volt,fuel_percentage;accel,seatbelt,hard_brake,door_lock,gear_toggle,clutch,hard_steer,speed,distance,origin_vertex,destination_vertex}** or just an asterisk '*'(all columns).
+    Here Columns can be any number of comma-separated values among **{vehicle_id,oil_life_pct,tire_p_rl,tire_p_rr,tire_p_fl,tire_p_fr,batt_volt,fuel_percentage;accel,seatbelt,hard_brake,door_lock,gear_toggle,clutch,hard_steer,speed,distance,origin_vertex,destination_vertex}** or just an asterisk '*'(all columns).
 
     vehicle_id,origin_vertex and destination_vertex are integers. accel,seatbelt,hard_brake,door_lock,gear_toggle,clutch,hard_steer are boolean values. The rest are floating point values.
 2. For Aggregate Select Queries:
