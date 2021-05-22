@@ -109,16 +109,16 @@ MultiCol: MultiCol Comma Identifier
 };
 OrderCriteria: Ascending
 {
-	$$ = true;
+	$$ = false;
 }
 | Descending
 {
-	$$ = false;
+	$$ = true;
 }
 |
 /*empty*/
 {
-	$$ = true;
+	$$ = false;
 };
 WhereCondition: 
  Where Exp

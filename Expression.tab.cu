@@ -1457,7 +1457,7 @@ yyreduce:
   case 11:
 #line 111 "Expression.y" /* yacc.c:1646  */
     {
-	(yyval.distinct) = true;
+	(yyval.distinct) = false;
 }
 #line 1463 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
@@ -1465,7 +1465,7 @@ yyreduce:
   case 12:
 #line 115 "Expression.y" /* yacc.c:1646  */
     {
-	(yyval.distinct) = false;
+	(yyval.distinct) = true;
 }
 #line 1471 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
@@ -1473,7 +1473,7 @@ yyreduce:
   case 13:
 #line 120 "Expression.y" /* yacc.c:1646  */
     {
-	(yyval.distinct) = true;
+	(yyval.distinct) = false;
 }
 #line 1479 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
@@ -1918,7 +1918,7 @@ yyreduce:
 	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
 	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
 		YYABORT;
-	(yyval.expression)->type_of_expr =  3;
+	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
 }
 #line 1924 "Expression.tab.cpp" /* yacc.c:1646  */
     break;
@@ -1935,7 +1935,7 @@ yyreduce:
 	(yyval.expression)->right_hand_term = (yyvsp[0].expression);
 	if((yyvsp[-2].expression)->type_of_expr ==  1 || (yyvsp[0].expression)->type_of_expr == 1)
 		YYABORT;
-	(yyval.expression)->type_of_expr =  3;
+	(yyval.expression)->type_of_expr =  std::max((yyvsp[-2].expression)->type_of_expr,(yyvsp[0].expression)->type_of_expr);
 }
 #line 1941 "Expression.tab.cpp" /* yacc.c:1646  */
     break;

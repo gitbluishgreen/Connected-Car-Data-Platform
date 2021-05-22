@@ -60,7 +60,7 @@ class Limits
     //this is actually the case by seeing if a contiguous number of such messages are actually received. One such
     //inconsistent message is an anomaly caused by transmission errors rather than an actual update.
     public: 
-        double acceleration = 4;//typical accln of 4 ms^-2
+        double acceleration = 40;//typical accln of 4 ms^-2
         double mileage = 1650;//in km/% of full tank (effectively kmpl) Assume 30 kmpl, 55 L tank. Default = 1650
         double interval_between_messages = 0.001;//10 messages per second.
         double oil_capacity = 0.0002071;//1/4827.9, decrease in oil_pct per km. (Assuming 3000 miles for full drain).
